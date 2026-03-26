@@ -641,22 +641,27 @@ const COLS_M = ["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","Prec
 // ╚══════════════════════════════════════════════════════════╝
 const CFG_OK = !CFG.clientId.includes("TU_") && !CFG.tenantId.includes("TU_") && !CFG.fileId.includes("TU_");
 
-// Solo inicializar MSAL si la config está completa
-let msalApp = null;
-if (CFG_OK) {
+const SCOPES = ["Files.ReadWrite", "User.Read"];
+let msalApp = null, msalReady = false;
+let me = null, token = null, prods = [], movs = [], charts_ = {};
+
+async function getMsal() {
+  if (msalReady) return msalApp;
   const msalCfg = {
-    auth: { clientId: CFG.clientId, authority: `https://login.microsoftonline.com/${CFG.tenantId}`,
-            redirectUri: window.location.href.split("?")[0].split("#")[0] },
+    auth: {
+      clientId:    CFG.clientId,
+      authority:   `https://login.microsoftonline.com/${CFG.tenantId}`,
+      redirectUri: window.location.origin + window.location.pathname
+    },
     cache: { cacheLocation: "sessionStorage" }
   };
   msalApp = new msal.PublicClientApplication(msalCfg);
+  await msalApp.initialize();
+  msalReady = true;
+  return msalApp;
 }
 
-const SCOPES = ["Files.ReadWrite", "User.Read"];
-let me = null, token = null, prods = [], movs = [], charts_ = {};
-
 async function initApp() {
-  // Si falta configuración, mostrar aviso y no intentar MSAL
   if (!CFG_OK) {
     el("cfg-warning").style.display = "block";
     return;
@@ -664,9 +669,9 @@ async function initApp() {
   showEl("loading-overlay");
   setMsg("Iniciando...");
   try {
-    await msalApp.initialize();
-    await msalApp.handleRedirectPromise();
-    const acc = msalApp.getAllAccounts();
+    const app = await getMsal();
+    await app.handleRedirectPromise();
+    const acc = app.getAllAccounts();
     if (acc.length > 0) {
       me = acc[0];
       await getToken();
@@ -683,15 +688,17 @@ async function initApp() {
 
 async function signIn() {
   if (!CFG_OK) { el("cfg-warning").style.display = "block"; return; }
-  hideEl("login-error");
+  el("login-error").style.display = "none";
   try {
     showEl("loading-overlay"); setMsg("Conectando con Microsoft...");
-    const r = await msalApp.loginPopup({ scopes: SCOPES });
+    const app = await getMsal();
+    const r = await app.loginPopup({ scopes: SCOPES });
     me = r.account; token = r.accessToken;
     await bootApp();
   } catch(e) {
     hideEl("loading-overlay");
     showLoginError("Error al iniciar sesión: " + e.message);
+    console.error(e);
   }
 }
 
@@ -703,16 +710,18 @@ function showLoginError(msg) {
 
 async function getToken() {
   try {
-    const r = await msalApp.acquireTokenSilent({ account: me, scopes: SCOPES });
+    const app = await getMsal();
+    const r = await app.acquireTokenSilent({ account: me, scopes: SCOPES });
     token = r.accessToken;
   } catch {
-    const r = await msalApp.acquireTokenPopup({ account: me, scopes: SCOPES });
+    const app = await getMsal();
+    const r = await app.acquireTokenPopup({ account: me, scopes: SCOPES });
     token = r.accessToken;
   }
 }
 
 function signOut() {
-  msalApp.logoutPopup();
+  if (msalApp) msalApp.logoutPopup();
   hideEl("app"); showEl("login-screen");
 }
 
