@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorelle · Inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+/* ── DESIGN SYSTEM ───────────────────────────────────── */
+:root {
+  --ink:     #111118;
+  --bone:    #f5f0e8;
+  --rose:    #c8506a;
+  --rose-lt: #f2d5db;
+  --mink:    #8c7b72;
+  --warm:    #e8dfd4;
+  --surface: #faf8f5;
+  --card:    #ffffff;
+  --border:  #e4ddd4;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --sidebar-w:    220px;
+  --radius:  14px;
+  --shadow:  0 2px 16px rgba(17,17,24,0.07);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--surface); color: var(--ink); font-size: 14px; }
+
+/* ── LOADING ─────────────────────────────────────────── */
+#loading-overlay {
+  position: fixed; inset: 0; background: rgba(17,17,24,0.55);
+  backdrop-filter: blur(4px); z-index: 9999;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+}
+.spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.25);
+  border-top-color: var(--rose); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-msg { color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 500; }
+
+/* ── LOGIN ───────────────────────────────────────────── */
+#login-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--ink);
+  background-image: radial-gradient(ellipse at 20% 50%, #2d1a20 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 20%, #1a1520 0%, transparent 50%);
+}
+.login-card {
+  background: var(--card); border-radius: 24px; padding: 52px 44px; max-width: 400px; width: 92%;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+  animation: fadeUp 0.5s ease;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+.login-brand { font-family: var(--font-display); font-size: 2.8rem; font-weight: 700; color: var(--ink);
+  letter-spacing: -0.5px; margin-bottom: 4px; }
+.login-sub { color: var(--mink); font-size: 13px; margin-bottom: 36px; }
+.btn-ms {
+  width: 100%; padding: 14px 20px; background: var(--rose); color: white; border: none;
+  border-radius: 12px; font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s; letter-spacing: 0.2px;
+}
+.btn-ms:hover { background: #b54460; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,80,106,0.35); }
+.login-note { color: var(--mink); font-size: 12px; text-align: center; margin-top: 16px; }
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+#sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--ink); color: white; z-index: 100;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-brand {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.sidebar-brand .brand-name {
+  font-family: var(--font-display); font-size: 1.9rem; font-weight: 700;
+  color: var(--rose); letter-spacing: 0.5px;
+}
+.sidebar-brand .brand-sub { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; }
+.sidebar-nav { padding: 16px 12px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 10px; color: rgba(255,255,255,0.5); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.06); }
+.nav-item.active { color: white; background: rgba(200,80,106,0.25); }
+.nav-item.active i { color: var(--rose); }
+.nav-item i { font-size: 15px; width: 18px; }
+.sidebar-bottom {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.user-badge { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 8px; }
+.user-avatar {
+  width: 30px; height: 30px; background: var(--rose); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.user-name { font-size: 12px; color: rgba(255,255,255,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-signout {
+  width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: rgba(255,255,255,0.5); font-size: 12px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-signout:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+
+/* ── MAIN ────────────────────────────────────────────── */
+#main { margin-left: var(--sidebar-w); padding: 32px; min-height: 100vh; }
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── PAGE HEADER ─────────────────────────────────────── */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.page-title { font-family: var(--font-display); font-size: 2rem; font-weight: 600; color: var(--ink); letter-spacing: -0.3px; }
+.page-title small { font-family: var(--font-body); font-size: 13px; font-weight: 400; color: var(--mink); margin-left: 8px; }
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn-primary-s {
+  padding: 10px 20px; background: var(--rose); color: white; border: none; border-radius: 10px;
+  font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 7px; transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary-s:hover { background: #b54460; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(200,80,106,0.3); }
+.btn-ghost { padding: 9px 16px; background: transparent; border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: var(--font-body); font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: all 0.15s; color: var(--ink); font-weight: 500;
+}
+.btn-ghost:hover { background: var(--warm); border-color: var(--mink); }
+
+/* ── KPI CARDS ───────────────────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: var(--card); border-radius: var(--radius); padding: 22px 20px;
+  border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.kpi-card.c1::before { background: linear-gradient(90deg, var(--rose), #e07a90); }
+.kpi-card.c2::before { background: linear-gradient(90deg, #7c6cd1, #9b8de0); }
+.kpi-card.c3::before { background: linear-gradient(90deg, #3db88a, #5dd1a6); }
+.kpi-card.c4::before { background: linear-gradient(90deg, #e0923b, #f0b46a); }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--mink); font-weight: 600; margin-bottom: 8px; }
+.kpi-value { font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: var(--ink); line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--mink); margin-top: 4px; }
+
+/* ── CARDS ───────────────────────────────────────────── */
+.card-s {
+  background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.card-head { padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+  font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+
+/* ── TABLE ───────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl thead th {
+  background: var(--bone); padding: 10px 14px; text-align: left; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--mink); font-weight: 600; white-space: nowrap;
+}
+table.tbl tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+table.tbl tbody tr:hover { background: var(--surface); }
+table.tbl tbody td { padding: 11px 14px; vertical-align: middle; }
+table.tbl tbody tr:last-child { border-bottom: none; }
+
+/* ── BADGES ──────────────────────────────────────────── */
+.badge-s {
+  display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.b-entrada  { background: #d4edda; color: #1a7a3a; }
+.b-salida   { background: #fce4e8; color: #a02040; }
+.b-ajpos    { background: #d4edda; color: #1a7a3a; }
+.b-ajneg    { background: #fce4e8; color: #a02040; }
+.b-devo     { background: #e8e0f5; color: #5b3b8a; }
+.b-cat      { background: var(--rose-lt); color: var(--rose); }
+.b-warn     { background: #fff3cd; color: #856404; }
+
+/* ── FORMS ───────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+.form-label-s { font-size: 12px; font-weight: 600; color: var(--mink); text-transform: uppercase;
+  letter-spacing: 0.7px; display: block; margin-bottom: 6px; }
+.form-control-s {
+  width: 100%; padding: 10px 13px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 9px; font-family: var(--font-body); font-size: 13.5px; color: var(--ink); outline: none;
+  transition: border-color 0.15s;
+}
+.form-control-s:focus { border-color: var(--rose); background: white; }
+.form-control-s::placeholder { color: #bbb; }
+.form-row { display: grid; gap: 14px; }
+.cols2 { grid-template-columns: 1fr 1fr; }
+.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(17,17,24,0.5); backdrop-filter: blur(3px);
+  z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-box {
+  background: var(--card); border-radius: 20px; width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.3); animation: fadeUp 0.2s ease;
+}
+.modal-sm  { max-width: 480px; }
+.modal-md  { max-width: 620px; }
+.modal-header-s {
+  padding: 24px 28px 0; display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title-s { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; }
+.btn-close-s {
+  background: none; border: none; cursor: pointer; color: var(--mink); font-size: 20px;
+  transition: color 0.15s; padding: 4px;
+}
+.btn-close-s:hover { color: var(--ink); }
+.modal-body-s { padding: 20px 28px; }
+.modal-footer-s {
+  padding: 16px 28px 24px; display: flex; justify-content: flex-end; gap: 10px;
+  border-top: 1px solid var(--border); margin-top: 8px;
+}
+
+/* ── FILTERS ROW ─────────────────────────────────────── */
+.filters-row {
+  display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 20px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1; }
+
+/* ── INFO BOX ────────────────────────────────────────── */
+.info-box {
+  background: #f0f7ff; border: 1px solid #c8dfff; border-radius: 10px;
+  padding: 12px 14px; font-size: 13px; color: #1a4a8a; margin-bottom: 14px;
+}
+.info-box b { font-weight: 600; }
+
+/* ── STOCK ROW ───────────────────────────────────────── */
+.stock-danger { color: #c8506a; font-weight: 700; }
+.empty-state { padding: 48px; text-align: center; color: var(--mink); }
+.empty-state i { font-size: 40px; opacity: 0.3; display: block; margin-bottom: 12px; }
+
+/* ── CHARTS ──────────────────────────────────────────── */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+  box-shadow: var(--shadow); padding: 22px; }
+.chart-title { font-weight: 600; font-size: 14px; margin-bottom: 18px; color: var(--ink); }
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 0px; }
+  #sidebar { transform: translateX(-220px); }
+  #main { margin-left: 0; padding: 20px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── LOADING ───────────────────────────────────────── -->
+<div id="loading-overlay" style="display:none;">
+  <div class="spinner"></div>
+  <div id="loading-msg">Iniciando...</div>
+</div>
+
+<!-- ─── LOGIN ─────────────────────────────────────────── -->
+<div id="login-screen" style="display:flex;">
+  <div class="login-card">
+    <div class="login-brand">Sorelle</div>
+    <div class="login-sub">Sistema de Inventario · Calzado</div>
+    <div id="cfg-warning" style="display:none;background:#fff3cd;border:1px solid #f0c040;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7a5a00;line-height:1.6;">
+      <b>⚙️ Configuración pendiente</b><br>
+      Abre el archivo en un editor de texto y reemplaza los 3 valores al inicio del script:
+      <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-size:12px;">clientId</code>,
+      <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-size:12px;">tenantId</code>,
+      <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-size:12px;">fileId</code>.
+      Consulta la Guía de Instalación.
+    </div>
+    <div id="login-error" style="display:none;background:#fce4e8;border:1px solid #e8a0b0;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#8a1a30;"></div>
+    <button class="btn-ms" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 23 23" fill="none">
+        <path d="M1 1h10v10H1V1zm11 0h10v10H12V1zM1 12h10v10H1V12zm11 0h10v10H12V12z" fill="white" fill-opacity=".9"/>
+      </svg>
+      Iniciar sesión con Microsoft 365
+    </button>
+    <p class="login-note">Usa tus credenciales de Office 365</p>
+  </div>
+</div>
+
+<!-- ─── APP ───────────────────────────────────────────── -->
+<div id="app" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Sorelle</div>
+      <div class="brand-sub">Inventario</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="goPage('dashboard',this)">
+        <i class="bi bi-grid-1x2"></i>Dashboard
+      </button>
+      <button class="nav-item" onclick="goPage('productos',this)">
+        <i class="bi bi-box-seam"></i>Productos
+      </button>
+      <button class="nav-item" onclick="goPage('movimientos',this)">
+        <i class="bi bi-arrow-left-right"></i>Movimientos
+      </button>
+      <button class="nav-item" onclick="goPage('reportes',this)">
+        <i class="bi bi-bar-chart-line"></i>Reportes
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-name" id="user-name">Cargando...</div>
+      </div>
+      <button class="btn-signout" onclick="signOut()">
+        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- ── DASHBOARD ──────────────────────────────────── -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Dashboard <small id="dash-fecha"></small></div>
+        <button class="btn-ghost" onclick="refreshData()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card c1">
+          <div class="kpi-label">Productos Activos</div>
+          <div class="kpi-value" id="kpi-prods">—</div>
+          <div class="kpi-sub" id="kpi-prods-sub">—</div>
+        </div>
+        <div class="kpi-card c2">
+          <div class="kpi-label">Unidades en Stock</div>
+          <div class="kpi-value" id="kpi-stock">—</div>
+          <div class="kpi-sub" id="kpi-stock-sub">—</div>
+        </div>
+        <div class="kpi-card c3">
+          <div class="kpi-label">Valor Inventario</div>
+          <div class="kpi-value" id="kpi-valor">—</div>
+          <div class="kpi-sub">a precio de costo</div>
+        </div>
+        <div class="kpi-card c4">
+          <div class="kpi-label">Stock Bajo ⚠️</div>
+          <div class="kpi-value" id="kpi-bajo">—</div>
+          <div class="kpi-sub">productos críticos</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
+        <div class="card-s">
+          <div class="card-head">Últimos Movimientos</div>
+          <div id="dash-movimientos"></div>
+        </div>
+        <div class="card-s">
+          <div class="card-head">Alertas de Stock</div>
+          <div id="dash-stockbajo"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTOS ───────────────────────────────────── -->
+    <div id="page-productos" class="page">
+      <div class="page-header">
+        <div class="page-title">Productos</div>
+        <button class="btn-primary-s" onclick="openModalProd()"><i class="bi bi-plus-lg"></i> Nuevo Producto</button>
+      </div>
+      <div class="card-s">
+        <div class="filters-row">
+          <div class="filter-group" style="flex:2;">
+            <input class="form-control-s" id="busq-prod" placeholder="🔍 Buscar SKU o nombre..." oninput="renderTablaProductos()">
+          </div>
+          <div class="filter-group">
+            <select class="form-control-s" id="fil-cat" onchange="renderTablaProductos()">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select class="form-control-s" id="fil-talla" onchange="renderTablaProductos()">
+              <option value="">Todas las tallas</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select class="form-control-s" id="fil-ubic" onchange="renderTablaProductos()">
+              <option value="">Todas las ubicaciones</option>
+              <option>Bodega Principal</option><option>Tienda</option>
+              <option>Consignacion</option><option>Transito</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Nombre</th><th>Categoría</th><th>Talla</th>
+                <th>Proveedor</th><th>Costo</th><th>P. Venta</th>
+                <th>Stock</th><th>Ubicación</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-productos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MOVIMIENTOS ─────────────────────────────────── -->
+    <div id="page-movimientos" class="page">
+      <div class="page-header">
+        <div class="page-title">Movimientos</div>
+        <button class="btn-primary-s" onclick="openModalMov()"><i class="bi bi-plus-lg"></i> Registrar</button>
+      </div>
+      <div class="card-s">
+        <div class="filters-row">
+          <div class="filter-group">
+            <input type="date" class="form-control-s" id="fil-fi" onchange="renderTablaMovimientos()">
+          </div>
+          <div class="filter-group">
+            <input type="date" class="form-control-s" id="fil-ff" onchange="renderTablaMovimientos()">
+          </div>
+          <div class="filter-group">
+            <select class="form-control-s" id="fil-tipo" onchange="renderTablaMovimientos()">
+              <option value="">Todos los tipos</option>
+              <option>Entrada</option><option>Salida</option>
+              <option>Ajuste Positivo</option><option>Ajuste Negativo</option><option>Devolucion</option>
+            </select>
+          </div>
+          <div class="filter-group" style="flex:2;">
+            <input class="form-control-s" id="fil-vend" placeholder="Filtrar por vendedor..." oninput="renderTablaMovimientos()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Producto</th><th>SKU</th><th>Tipo</th>
+                <th>Cant.</th><th>Vendedor</th><th>P. Unit.</th><th>Total</th><th>Notas</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-movimientos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REPORTES ────────────────────────────────────── -->
+    <div id="page-reportes" class="page">
+      <div class="page-header">
+        <div class="page-title">Reportes</div>
+        <select class="form-control-s" id="rep-periodo" onchange="renderReportes()" style="width:200px;">
+          <option value="7">Últimos 7 días</option>
+          <option value="30" selected>Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+          <option value="365">Último año</option>
+        </select>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">📅 Movimientos por Día</div>
+          <canvas id="ch-dias" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">👤 Ventas por Vendedor</div>
+          <canvas id="ch-vend" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🔥 Más Vendidos (unidades)</div>
+          <canvas id="ch-top" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🐢 Menos Vendidos</div>
+          <canvas id="ch-low" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ─── MODAL PRODUCTO ─────────────────────────────────── -->
+<div id="modal-prod" class="modal-overlay" style="display:none;" onclick="closeModalOnBg(event,'modal-prod')">
+  <div class="modal-box modal-md">
+    <div class="modal-header-s">
+      <div class="modal-title-s" id="modal-prod-title">Nuevo Producto</div>
+      <button class="btn-close-s" onclick="closeModal('modal-prod')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body-s">
+      <input type="hidden" id="prod-idx">
+      <div class="form-row cols2">
+        <div class="form-group">
+          <label class="form-label-s">SKU *</label>
+          <input class="form-control-s" id="prod-sku" placeholder="Ej: ZAP-CAS-36-001">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Nombre *</label>
+          <input class="form-control-s" id="prod-nombre" placeholder="Nombre del producto">
+        </div>
+      </div>
+      <div class="form-row cols3">
+        <div class="form-group">
+          <label class="form-label-s">Categoría</label>
+          <select class="form-control-s" id="prod-cat">
+            <option>Casual</option><option>Deportivo</option><option>Formal</option>
+            <option>Sandalia</option><option>Bota</option><option>Tacon Alto</option>
+            <option>Plataforma</option><option>Balerina</option><option>Mocasin</option><option>Oxford</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Talla</label>
+          <select class="form-control-s" id="prod-talla">
+            <option>33</option><option>34</option><option>35</option><option>36</option>
+            <option>37</option><option>38</option><option>39</option><option>40</option>
+            <option>41</option><option>42</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Ubicación</label>
+          <select class="form-control-s" id="prod-ubic">
+            <option>Bodega Principal</option><option>Tienda</option>
+            <option>Consignacion</option><option>Transito</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols2">
+        <div class="form-group">
+          <label class="form-label-s">Proveedor</label>
+          <input class="form-control-s" id="prod-prov" placeholder="Nombre del proveedor">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Costo (Q)</label>
+          <input type="number" class="form-control-s" id="prod-costo" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-row cols3">
+        <div class="form-group">
+          <label class="form-label-s">Precio Venta (Q)</label>
+          <input type="number" class="form-control-s" id="prod-precio" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Stock Actual</label>
+          <input type="number" class="form-control-s" id="prod-stock" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Stock Mínimo</label>
+          <input type="number" class="form-control-s" id="prod-stockmin" placeholder="5" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-s">
+      <button class="btn-ghost" onclick="closeModal('modal-prod')">Cancelar</button>
+      <button class="btn-primary-s" onclick="guardarProducto()"><i class="bi bi-check-lg"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL MOVIMIENTO ───────────────────────────────── -->
+<div id="modal-mov" class="modal-overlay" style="display:none;" onclick="closeModalOnBg(event,'modal-mov')">
+  <div class="modal-box modal-sm">
+    <div class="modal-header-s">
+      <div class="modal-title-s">Registrar Movimiento</div>
+      <button class="btn-close-s" onclick="closeModal('modal-mov')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body-s">
+      <div class="form-group">
+        <label class="form-label-s">Producto *</label>
+        <select class="form-control-s" id="mov-prod" onchange="onProdChange()">
+          <option value="">Seleccionar producto...</option>
+        </select>
+      </div>
+      <div id="mov-info" class="info-box" style="display:none;"></div>
+      <div class="form-row cols2">
+        <div class="form-group">
+          <label class="form-label-s">Tipo *</label>
+          <select class="form-control-s" id="mov-tipo" onchange="onProdChange()">
+            <option>Entrada</option><option>Salida</option>
+            <option>Ajuste Positivo</option><option>Ajuste Negativo</option><option>Devolucion</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Cantidad *</label>
+          <input type="number" class="form-control-s" id="mov-cant" value="1" min="1" oninput="calcTotal()">
+        </div>
+      </div>
+      <div class="form-row cols2">
+        <div class="form-group">
+          <label class="form-label-s">Fecha</label>
+          <input type="date" class="form-control-s" id="mov-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Precio Unitario (Q)</label>
+          <input type="number" class="form-control-s" id="mov-precio" placeholder="0.00" step="0.01" min="0" oninput="calcTotal()">
+        </div>
+      </div>
+      <div class="form-row cols2">
+        <div class="form-group">
+          <label class="form-label-s">Total (Q)</label>
+          <input type="number" class="form-control-s" id="mov-total" readonly style="background:var(--warm);">
+        </div>
+        <div class="form-group">
+          <label class="form-label-s">Notas</label>
+          <input class="form-control-s" id="mov-notas" placeholder="Opcional...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-s">
+      <button class="btn-ghost" onclick="closeModal('modal-mov')">Cancelar</button>
+      <button class="btn-primary-s" onclick="guardarMovimiento()"><i class="bi bi-check-lg"></i> Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ╔══════════════════════════════════════════════════════════╗
+// ║  ⚙️  CONFIGURACIÓN — EDITAR ESTOS 3 VALORES             ║
+// ╚══════════════════════════════════════════════════════════╝
+const CFG = {
+  clientId:    "TU_CLIENT_ID_AQUI",        // Azure Entra ID > App registrations
+  tenantId:    "TU_TENANT_ID_AQUI",        // Azure Entra ID > Overview > Tenant ID
+  fileId:      "TU_EXCEL_FILE_ID_AQUI",    // Ver guía de instalación
+  currency:    "Q "                         // Prefijo de moneda
+};
+
+// Estructura del Excel — NO cambiar si usas el template
+const TBL = { prod: "Productos", mov: "Movimientos" };
+const COLS_P = ["SKU","Nombre","Categoria","Talla","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","Activo"];
+const COLS_M = ["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","Notas"];
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  AUTH — MSAL                                            ║
+// ╚══════════════════════════════════════════════════════════╝
+const CFG_OK = !CFG.clientId.includes("TU_") && !CFG.tenantId.includes("TU_") && !CFG.fileId.includes("TU_");
+
+// Solo inicializar MSAL si la config está completa
+let msalApp = null;
+if (CFG_OK) {
+  const msalCfg = {
+    auth: { clientId: CFG.clientId, authority: `https://login.microsoftonline.com/${CFG.tenantId}`,
+            redirectUri: window.location.href.split("?")[0].split("#")[0] },
+    cache: { cacheLocation: "sessionStorage" }
+  };
+  msalApp = new msal.PublicClientApplication(msalCfg);
+}
+
+const SCOPES = ["Files.ReadWrite", "User.Read"];
+let me = null, token = null, prods = [], movs = [], charts_ = {};
+
+async function initApp() {
+  // Si falta configuración, mostrar aviso y no intentar MSAL
+  if (!CFG_OK) {
+    el("cfg-warning").style.display = "block";
+    return;
+  }
+  showEl("loading-overlay");
+  setMsg("Iniciando...");
+  try {
+    await msalApp.initialize();
+    await msalApp.handleRedirectPromise();
+    const acc = msalApp.getAllAccounts();
+    if (acc.length > 0) {
+      me = acc[0];
+      await getToken();
+      await bootApp();
+    } else {
+      hideEl("loading-overlay");
+    }
+  } catch(e) {
+    hideEl("loading-overlay");
+    showLoginError("Error al conectar: " + e.message);
+    console.error(e);
+  }
+}
+
+async function signIn() {
+  if (!CFG_OK) { el("cfg-warning").style.display = "block"; return; }
+  hideEl("login-error");
+  try {
+    showEl("loading-overlay"); setMsg("Conectando con Microsoft...");
+    const r = await msalApp.loginPopup({ scopes: SCOPES });
+    me = r.account; token = r.accessToken;
+    await bootApp();
+  } catch(e) {
+    hideEl("loading-overlay");
+    showLoginError("Error al iniciar sesión: " + e.message);
+  }
+}
+
+function showLoginError(msg) {
+  const div = el("login-error");
+  div.style.display = "block";
+  div.textContent = "❌ " + msg;
+}
+
+async function getToken() {
+  try {
+    const r = await msalApp.acquireTokenSilent({ account: me, scopes: SCOPES });
+    token = r.accessToken;
+  } catch {
+    const r = await msalApp.acquireTokenPopup({ account: me, scopes: SCOPES });
+    token = r.accessToken;
+  }
+}
+
+function signOut() {
+  msalApp.logoutPopup();
+  hideEl("app"); showEl("login-screen");
+}
+
+async function bootApp() {
+  hideEl("login-screen");
+  showEl("app");
+  const name = me.name || me.username;
+  el("user-name").textContent = name;
+  el("user-avatar").textContent = (name[0]||"U").toUpperCase();
+  el("dash-fecha").textContent = new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
+  await refreshData();
+  hideEl("loading-overlay");
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  GRAPH API                                              ║
+// ╚══════════════════════════════════════════════════════════╝
+const BASE = `https://graph.microsoft.com/v1.0/me/drive/items/${CFG.fileId}/workbook`;
+
+async function gapi(method, path, body) {
+  await getToken();
+  const r = await fetch(BASE + path, {
+    method,
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({}));
+    throw new Error(e?.error?.message || `HTTP ${r.status}: ${path}`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+async function getRows(tbl) {
+  const d = await gapi("GET", `/tables/${tbl}/rows`);
+  return d?.value || [];
+}
+
+function toObjs(rows, cols) {
+  return rows.map((r, i) => {
+    const o = { _i: i };
+    cols.forEach((c, j) => o[c] = r.values[0][j]);
+    return o;
+  });
+}
+
+async function addRow(tbl, vals)        { return gapi("POST",   `/tables/${tbl}/rows/add`, { values: [vals] }); }
+async function updRow(tbl, i, vals)     { return gapi("PATCH",  `/tables/${tbl}/rows/$/itemAt(index=${i})`, { values: [vals] }); }
+async function delRow(tbl, i)           { return gapi("DELETE", `/tables/${tbl}/rows/$/itemAt(index=${i})`); }
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  DATA                                                   ║
+// ╚══════════════════════════════════════════════════════════╝
+async function refreshData() {
+  showEl("loading-overlay"); setMsg("Cargando datos...");
+  try {
+    const [pr, mr] = await Promise.all([getRows(TBL.prod), getRows(TBL.mov)]);
+    prods = toObjs(pr, COLS_P);
+    movs  = toObjs(mr, COLS_M);
+    renderDash(); renderTablaProductos(); renderTablaMovimientos();
+    // populate dropdowns
+    const cats   = [...new Set(prods.map(p=>p.Categoria).filter(Boolean))];
+    const tallas = [...new Set(prods.map(p=>String(p.Talla)).filter(Boolean))].sort((a,b)=>+a-+b);
+    populateSelect("fil-cat",   cats,   "Todas las categorías");
+    populateSelect("fil-talla", tallas, "Todas las tallas");
+  } catch(e) {
+    hideEl("loading-overlay");
+    alert("❌ Error al cargar datos.\n\n" + e.message +
+      "\n\nVerifica:\n• clientId y tenantId correctos\n• fileId correcto\n• Excel con tablas 'Productos' y 'Movimientos'");
+    return;
+  }
+  hideEl("loading-overlay");
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  DASHBOARD                                              ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderDash() {
+  const activos    = prods.filter(p => p.Activo !== false && p.Activo !== 0 && p.Activo !== "FALSE" && p.Activo !== "");
+  const totalStock = activos.reduce((s,p) => s + (+p.StockActual||0), 0);
+  const valorInv   = activos.reduce((s,p) => s + ((+p.StockActual||0) * (+p.Costo||0)), 0);
+  const bajo       = activos.filter(p => (+p.StockActual||0) <= (+p.StockMinimo||0));
+
+  el("kpi-prods").textContent       = activos.length;
+  el("kpi-prods-sub").textContent   = `${prods.length} en total`;
+  el("kpi-stock").textContent       = totalStock;
+  el("kpi-stock-sub").textContent   = `${activos.length} referencias`;
+  el("kpi-valor").textContent       = CFG.currency + fmt2(valorInv);
+  el("kpi-bajo").textContent        = bajo.length;
+
+  // Últimos movimientos
+  const ultMov = [...movs].reverse().slice(0, 8);
+  el("dash-movimientos").innerHTML = ultMov.length === 0
+    ? emptyState("bi-arrow-left-right", "Sin movimientos aún")
+    : `<table class="tbl"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cant.</th></tr></thead>
+       <tbody>${ultMov.map(m=>`<tr>
+         <td>${fmtDate(m.Fecha)}</td>
+         <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.Producto}</td>
+         <td>${badgeMov(m.Tipo)}</td>
+         <td><b>${m.Cantidad}</b></td>
+       </tr>`).join("")}</tbody></table>`;
+
+  // Alertas
+  el("dash-stockbajo").innerHTML = bajo.length === 0
+    ? `<div class="empty-state"><i class="bi bi-check-circle" style="font-size:32px;opacity:0.4;color:#3db88a;"></i>
+       <div style="color:#3db88a;font-weight:600;">Todo en orden</div></div>`
+    : `<table class="tbl"><thead><tr><th>SKU</th><th>Producto</th><th>Talla</th><th>Stock</th></tr></thead>
+       <tbody>${bajo.map(p=>`<tr>
+         <td><code style="font-size:11px">${p.SKU}</code></td>
+         <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.Nombre}</td>
+         <td>${p.Talla}</td>
+         <td><span class="badge-s b-salida">${p.StockActual}</span></td>
+       </tr>`).join("")}</tbody></table>`;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  PRODUCTOS                                              ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderTablaProductos() {
+  const busq = el("busq-prod").value.toLowerCase();
+  const cat  = el("fil-cat").value;
+  const tall = el("fil-talla").value;
+  const ubic = el("fil-ubic").value;
+  const list = prods.filter(p =>
+    (!busq || p.Nombre?.toLowerCase().includes(busq) || p.SKU?.toLowerCase().includes(busq)) &&
+    (!cat  || p.Categoria === cat) &&
+    (!tall || String(p.Talla) === tall) &&
+    (!ubic || p.Ubicacion === ubic)
+  );
+  const tbody = el("tbody-productos");
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="10">${emptyState("bi-box-seam","Sin productos")}</td></tr>`; return; }
+  const bajo = (p) => (+p.StockActual||0) <= (+p.StockMinimo||0);
+  tbody.innerHTML = list.map(p => `<tr>
+    <td><code style="font-size:12px;color:var(--rose)">${p.SKU}</code></td>
+    <td style="font-weight:500">${p.Nombre}</td>
+    <td><span class="badge-s b-cat">${p.Categoria||''}</span></td>
+    <td style="text-align:center"><b>${p.Talla}</b></td>
+    <td style="color:var(--mink);font-size:12px">${p.Proveedor||'—'}</td>
+    <td>${CFG.currency}${fmt2(p.Costo)}</td>
+    <td style="font-weight:600">${CFG.currency}${fmt2(p.PrecioVenta)}</td>
+    <td class="${bajo(p)?'stock-danger':''}">
+      ${p.StockActual} ${bajo(p)?'<span class="badge-s b-warn" style="font-size:10px">⚠️ bajo</span>':''}
+    </td>
+    <td style="color:var(--mink);font-size:12px">${p.Ubicacion||''}</td>
+    <td style="white-space:nowrap">
+      <button onclick="openModalProd(${p._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px 6px;" title="Editar"><i class="bi bi-pencil"></i></button>
+      <button onclick="eliminarProd(${p._i})" style="background:none;border:none;cursor:pointer;color:#c8506a;padding:4px 6px;" title="Eliminar"><i class="bi bi-trash"></i></button>
+    </td>
+  </tr>`).join("");
+}
+
+function openModalProd(idx = null) {
+  el("prod-idx").value = idx !== null ? idx : "";
+  el("modal-prod-title").textContent = idx !== null ? "Editar Producto" : "Nuevo Producto";
+  if (idx !== null) {
+    const p = prods[idx];
+    el("prod-sku").value    = p.SKU||"";    el("prod-nombre").value = p.Nombre||"";
+    el("prod-cat").value    = p.Categoria||"Casual";
+    el("prod-talla").value  = String(p.Talla||"36");
+    el("prod-ubic").value   = p.Ubicacion||"Bodega Principal";
+    el("prod-prov").value   = p.Proveedor||"";
+    el("prod-costo").value  = p.Costo||"";  el("prod-precio").value = p.PrecioVenta||"";
+    el("prod-stock").value  = p.StockActual||"0";
+    el("prod-stockmin").value = p.StockMinimo||"5";
+  } else {
+    ["prod-sku","prod-nombre","prod-prov","prod-costo","prod-precio"].forEach(id=>el(id).value="");
+    el("prod-stock").value="0"; el("prod-stockmin").value="5";
+  }
+  openModal("modal-prod");
+}
+
+async function guardarProducto() {
+  const idx  = el("prod-idx").value;
+  const vals = [
+    el("prod-sku").value.trim(), el("prod-nombre").value.trim(),
+    el("prod-cat").value, el("prod-talla").value, el("prod-prov").value.trim(),
+    el("prod-ubic").value,
+    parseFloat(el("prod-costo").value)||0, parseFloat(el("prod-precio").value)||0,
+    parseInt(el("prod-stock").value)||0,   parseInt(el("prod-stockmin").value)||5, true
+  ];
+  if (!vals[0]||!vals[1]) { alert("SKU y Nombre son obligatorios"); return; }
+  showEl("loading-overlay"); setMsg("Guardando...");
+  try {
+    idx !== "" ? await updRow(TBL.prod, +idx, vals) : await addRow(TBL.prod, vals);
+    closeModal("modal-prod");
+    await refreshData();
+  } catch(e) { hideEl("loading-overlay"); alert("Error: " + e.message); }
+}
+
+async function eliminarProd(idx) {
+  if (!confirm("¿Eliminar este producto? Esta acción no se puede deshacer.")) return;
+  showEl("loading-overlay"); setMsg("Eliminando...");
+  try { await delRow(TBL.prod, idx); await refreshData(); }
+  catch(e) { hideEl("loading-overlay"); alert("Error: " + e.message); }
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  MOVIMIENTOS                                            ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderTablaMovimientos() {
+  const fi   = el("fil-fi").value, ff = el("fil-ff").value;
+  const tipo = el("fil-tipo").value, vend = el("fil-vend").value.toLowerCase();
+  const list = movs.filter(m => {
+    const f = m.Fecha ? String(m.Fecha).substring(0,10) : "";
+    return (!fi||f>=fi)&&(!ff||f<=ff)&&(!tipo||m.Tipo===tipo)&&(!vend||(m.Vendedor||"").toLowerCase().includes(vend));
+  });
+  const tbody = el("tbody-movimientos");
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="9">${emptyState("bi-arrow-left-right","Sin movimientos")}</td></tr>`; return; }
+  tbody.innerHTML = [...list].reverse().map(m=>`<tr>
+    <td style="white-space:nowrap;font-size:12px">${fmtDate(m.Fecha)}</td>
+    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${m.Producto}</td>
+    <td><code style="font-size:11px">${m.SKU}</code></td>
+    <td>${badgeMov(m.Tipo)}</td>
+    <td style="text-align:center;font-weight:600">${m.Cantidad}</td>
+    <td style="font-size:12px;color:var(--mink)">${m.Vendedor||'—'}</td>
+    <td>${CFG.currency}${fmt2(m.PrecioUnit)}</td>
+    <td style="font-weight:600">${CFG.currency}${fmt2(m.Total)}</td>
+    <td style="font-size:12px;color:var(--mink)">${m.Notas||''}</td>
+  </tr>`).join("");
+}
+
+function openModalMov() {
+  const sel = el("mov-prod");
+  sel.innerHTML = '<option value="">Seleccionar producto...</option>';
+  prods.forEach((p,i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${p.SKU} · ${p.Nombre} (T${p.Talla}) — Stock: ${p.StockActual}`;
+    sel.appendChild(opt);
+  });
+  el("mov-fecha").value = new Date().toISOString().split("T")[0];
+  el("mov-cant").value  = "1";
+  el("mov-precio").value = el("mov-total").value = el("mov-notas").value = "";
+  el("mov-info").style.display = "none";
+  openModal("modal-mov");
+}
+
+function onProdChange() {
+  const idx = el("mov-prod").value;
+  const info = el("mov-info");
+  if (idx === "") { info.style.display="none"; return; }
+  const p = prods[+idx], tipo = el("mov-tipo").value;
+  info.style.display = "block";
+  info.innerHTML = `<b>${p.Nombre}</b> | Talla: ${p.Talla} | Stock actual: <b>${p.StockActual}</b> | 
+    Costo: ${CFG.currency}${fmt2(p.Costo)} | P.Venta: ${CFG.currency}${fmt2(p.PrecioVenta)}`;
+  el("mov-precio").value = tipo==="Salida"||tipo==="Devolucion" ? (p.PrecioVenta||"") : (p.Costo||"");
+  calcTotal();
+}
+
+function calcTotal() {
+  const q = parseFloat(el("mov-cant").value)||0, pr = parseFloat(el("mov-precio").value)||0;
+  el("mov-total").value = (q*pr).toFixed(2);
+}
+
+async function guardarMovimiento() {
+  const pi = el("mov-prod").value;
+  if (!pi) { alert("Selecciona un producto"); return; }
+  const p = prods[+pi];
+  const tipo = el("mov-tipo").value, cant = parseInt(el("mov-cant").value)||0;
+  if (cant <= 0) { alert("La cantidad debe ser mayor a 0"); return; }
+  if ((tipo==="Salida"||tipo==="Ajuste Negativo") && cant>(+p.StockActual||0)) {
+    if (!confirm(`⚠️ Stock insuficiente (${p.StockActual} disponibles). ¿Continuar de todas formas?`)) return;
+  }
+  showEl("loading-overlay"); setMsg("Registrando...");
+  try {
+    let nuevoStock = +p.StockActual||0;
+    if (tipo==="Entrada"||tipo==="Ajuste Positivo") nuevoStock += cant;
+    else nuevoStock = Math.max(0, nuevoStock - cant);
+
+    const movVals = [
+      Date.now().toString(), p.SKU, p.Nombre, tipo, cant,
+      el("mov-fecha").value, me.name||me.username,
+      parseFloat(el("mov-precio").value)||0,
+      parseFloat(el("mov-total").value)||0,
+      el("mov-notas").value
+    ];
+    await addRow(TBL.mov, movVals);
+    const pVals = COLS_P.map(c => c==="StockActual" ? nuevoStock : p[c]);
+    await updRow(TBL.prod, p._i, pVals);
+    closeModal("modal-mov");
+    await refreshData();
+  } catch(e) { hideEl("loading-overlay"); alert("Error: " + e.message); }
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  REPORTES                                               ║
+// ╚══════════════════════════════════════════════════════════╝
+function renderReportes() {
+  const dias = parseInt(el("rep-periodo").value);
+  const corte = new Date(); corte.setDate(corte.getDate() - dias);
+  const fil    = movs.filter(m => m.Fecha && new Date(m.Fecha) >= corte);
+  const salidas = fil.filter(m => m.Tipo==="Salida");
+
+  // Por día
+  const xDia = {};
+  fil.forEach(m => { const f = m.Fecha?String(m.Fecha).substring(0,10):"?"; xDia[f]=(xDia[f]||0)+(+m.Cantidad||0); });
+  const diasSorted = Object.keys(xDia).sort();
+  mkChart("ch-dias","bar",diasSorted,diasSorted.map(d=>xDia[d]),"Unidades","#667eea",false);
+
+  // Por vendedor
+  const xVend = {};
+  salidas.forEach(m=>{const v=m.Vendedor||"Sin nombre";xVend[v]=(xVend[v]||0)+(+m.Cantidad||0);});
+  mkChart("ch-vend","doughnut",Object.keys(xVend),Object.values(xVend),"Unidades",null,true);
+
+  // Más vendidos
+  const xProd = {};
+  salidas.forEach(m=>{const k=m.Producto||m.SKU;xProd[k]=(xProd[k]||0)+(+m.Cantidad||0);});
+  const top = Object.entries(xProd).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  mkChart("ch-top","bar",top.map(e=>e[0].substring(0,22)),top.map(e=>e[1]),"Unidades","#3db88a",false);
+
+  // Menos vendidos
+  const bot = Object.entries(xProd).sort((a,b)=>a[1]-b[1]).slice(0,6);
+  mkChart("ch-low","bar",bot.map(e=>e[0].substring(0,22)),bot.map(e=>e[1]),"Unidades","#e0923b",false);
+}
+
+const PALETTE = ["#c8506a","#667eea","#3db88a","#e0923b","#9b59b6","#1abc9c","#e74c3c","#f39c12"];
+function mkChart(id, type, labels, data, label, color, usePalette) {
+  if (charts_[id]) charts_[id].destroy();
+  const ctx = document.getElementById(id).getContext("2d");
+  charts_[id] = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        label, data,
+        backgroundColor: usePalette ? PALETTE : (color + "cc"),
+        borderColor: usePalette ? PALETTE : color,
+        borderWidth: type==="bar" ? 0 : 2,
+        borderRadius: type==="bar" ? 6 : 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: usePalette }, tooltip: { mode:"index" } },
+      scales: type==="bar" ? { y:{ beginAtZero:true, grid:{color:"rgba(0,0,0,0.05)"} }, x:{grid:{display:false}} } : {}
+    }
+  });
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  UI HELPERS                                             ║
+// ╚══════════════════════════════════════════════════════════╝
+function goPage(name, btn) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  el("page-" + name).classList.add("active");
+  btn.classList.add("active");
+  if (name==="reportes") renderReportes();
+}
+function openModal(id)  { el(id).style.display="flex"; }
+function closeModal(id) { el(id).style.display="none"; }
+function closeModalOnBg(e, id) { if (e.target.id===id) closeModal(id); }
+function showEl(id) { const e=el(id); if(e) e.style.display="flex"; }
+function hideEl(id) { const e=el(id); if(e) e.style.display="none"; }
+function el(id)     { return document.getElementById(id); }
+function setMsg(m)  { const e=el("loading-msg"); if(e) e.textContent=m; }
+function fmt2(n)    { return (parseFloat(n)||0).toFixed(2); }
+function emptyState(icon, txt) {
+  return `<div class="empty-state"><i class="bi ${icon}"></i><div>${txt}</div></div>`;
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  try { return new Date(d).toLocaleDateString("es-GT",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+  catch { return String(d).substring(0,10); }
+}
+function badgeMov(tipo) {
+  if (!tipo) return "";
+  const map = { "Entrada":"b-entrada","Salida":"b-salida","Ajuste Positivo":"b-ajpos",
+                "Ajuste Negativo":"b-ajneg","Devolucion":"b-devo" };
+  return `<span class="badge-s ${map[tipo]||'b-cat'}">${tipo}</span>`;
+}
+function populateSelect(id, items, placeholder) {
+  const sel = el(id); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  items.forEach(i => sel.add(new Option(i,i)));
+  sel.value = cur;
+}
+
+// ── START ──────────────────────────────────────────────────
+initApp();
+</script>
+</body>
+</html>
