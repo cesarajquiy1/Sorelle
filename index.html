@@ -618,8 +618,27 @@ table.tbl tbody tr:last-child { border-bottom: none; }
 </div>
 
 <!-- SCRIPTS -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Cargar MSAL dinámicamente para garantizar que esté disponible
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+async function loadDeps() {
+  // Intentar CDN principal, si falla usar alternativo
+  try {
+    await loadScript("https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js");
+  } catch {
+    await loadScript("https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js");
+  }
+  await loadScript("https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js");
+  initApp();
+}
+window.addEventListener('DOMContentLoaded', loadDeps);
+</script>
 <script>
 // ╔══════════════════════════════════════════════════════════╗
 // ║  ⚙️  CONFIGURACIÓN — EDITAR ESTOS 3 VALORES             ║
@@ -655,7 +674,10 @@ async function getMsal() {
     },
     cache: { cacheLocation: "sessionStorage" }
   };
-  msalApp = new msal.PublicClientApplication(msalCfg);
+  // El CDN expone la librería como window.msal o window.msalBrowser según la versión
+  const MsalLib = window.msal || window.msalBrowser;
+  if (!MsalLib) throw new Error("Librería MSAL no cargada correctamente");
+  msalApp = new MsalLib.PublicClientApplication(msalCfg);
   await msalApp.initialize();
   msalReady = true;
   return msalApp;
@@ -1102,8 +1124,7 @@ function populateSelect(id, items, placeholder) {
   sel.value = cur;
 }
 
-// ── START ──────────────────────────────────────────────────
-initApp();
+// ── START — iniciado automáticamente tras cargar dependencias
 </script>
 </body>
 </html>
