@@ -519,7 +519,8 @@ window.addEventListener('DOMContentLoaded',loadDeps);
 const CFG={
   clientId:"2494f0fd-01ec-4589-80eb-0fab5dbfcfbb",
   tenantId:"ff1168fe-9ce1-4c19-8eda-df137df71893",
-  fileId:  "842bce8a-bc79-43e2-8078-8c998f4de4cd",
+  fileId:  "01632IMGWS346IRE4DPFB32IQTBQQ5F6R6",
+  driveId: "b!g0ySFvrDWka56zZs1r4ESVsijK3fx9lNjrLBCUK5maWsMdXmFlbpTrHhhhJ54WvS",
   currency:"Q ",
   storeName:"Sorelle Inversiones S.A.",
   storePhone:"",
@@ -536,7 +537,7 @@ const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"]
 
 // ─── AUTH ────────────────────────────────────────────────
 const CFG_OK=!CFG.clientId.includes("TU_")&&!CFG.tenantId.includes("TU_")&&!CFG.fileId.includes("TU_");
-const SCOPES=["Files.ReadWrite","User.Read"];
+const SCOPES=["Files.ReadWrite","Files.ReadWrite.All","Sites.ReadWrite.All","User.Read"];
 let msalApp=null,msalReady=false,me=null,token=null;
 let prods=[],movs=[],clis=[],vtas=[],dtls=[],charts_={};
 let cart=[];
@@ -590,7 +591,7 @@ async function bootApp(){
 }
 
 // ─── GRAPH API ───────────────────────────────────────────
-const BASE=`https://graph.microsoft.com/v1.0/me/drive/items/${CFG.fileId}/workbook`;
+const BASE=`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${CFG.fileId}/workbook`;
 async function gapi(method,path,body){
   await getToken();
   const r=await fetch(BASE+path,{method,headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
