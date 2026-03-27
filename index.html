@@ -399,7 +399,7 @@ table.t tbody tr:last-child{border-bottom:none}
     <div id="page-productos" class="page">
       <div class="ph">
         <div class="pt">Productos</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px" id="prod-admin-btns">
           <button class="bp b" onclick="openCSV()"><i class="bi bi-file-earmark-arrow-up"></i>Carga CSV</button>
           <button class="bp" onclick="openProd()"><i class="bi bi-plus-lg"></i>Nuevo</button>
         </div>
@@ -411,7 +411,7 @@ table.t tbody tr:last-child{border-bottom:none}
           <div class="fg2"><select class="fc" id="f-tal" onchange="renderProds()"><option value="">Todas las tallas</option></select></div>
         </div>
         <div class="tw"><table class="t">
-          <thead><tr><th>Img</th><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Color</th><th>Medidas</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>Stock</th><th>Ubicación</th><th></th></tr></thead>
+          <thead id="thead-prod"><tr><th>Img</th><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Color</th><th>Medidas</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>Stock</th><th>Ubicación</th><th></th></tr></thead>
           <tbody id="tb-prod"></tbody>
         </table></div>
       </div>
@@ -710,11 +710,13 @@ function bootApp(){
 
   // Aplicar rol — ocultar secciones según permisos
   const admin=isAdmin();
-  // Secciones solo para admin
   ["nav-historial","nav-clientes","nav-movimientos","nav-reportes",
    "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
     const e=g(id);if(e)e.style.display=admin?"":"none";
   });
+  // Ocultar botones de productos para no-admins
+  const prodBtns=g("prod-admin-btns");
+  if(prodBtns)prodBtns.style.display=admin?"flex":"none";
   // Si no es admin, ir directo a ventas al cargar
   if(!admin){
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -932,33 +934,54 @@ function fillUI(){
 function renderDash(){
   const hoy=localDate();
   const mes=hoy.slice(0,7);
-  const vh=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(hoy)});
-  const vm=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(mes)});
+  const admin=isAdmin();
+  const myName=(me?.name||me?.username||"").toLowerCase();
+
+  // No-admin: filtrar solo sus propias ventas
+  const misVtas=admin?vtas:vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName);
+
+  const vh=misVtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(hoy)});
+  const vm=misVtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(mes)});
   const act=prods.filter(p=>p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE");
   const bajo=act.filter(p=>(+p.StockActual||0)<=(+p.StockMinimo||0));
+
+  // KPIs — no-admin ve sus ventas; admin ve totales
   g("k1").textContent=vh.length;
   g("k1s").textContent=Q(vh.reduce((s,v)=>s+(+v.Total||0),0));
-  g("k2").textContent=Q(vm.reduce((s,v)=>s+(+v.Total||0),0));
+  g("k2").textContent=admin
+    ? Q(vm.reduce((s,v)=>s+(+v.Total||0),0))
+    : Q(vm.reduce((s,v)=>s+(+v.Total||0),0))+" (mis ventas)".replace(" (mis ventas)","");
+  g("k2").parentElement.querySelector(".ks").textContent=admin?"periodo actual":"tus ventas del mes";
   g("k3").textContent=act.length;
   g("k3s").textContent=act.reduce((s,p)=>s+(+p.StockActual||0),0)+" unidades";
-  g("k4").textContent=bajo.length;
-  const uvtas=[...vtas].reverse().slice(0,7);
+  g("k4").textContent=admin?bajo.length:"—";
+  g("k4").closest(".kc").style.display=admin?"":"none";
+
+  // Últimas ventas
+  const uvtas=[...misVtas].reverse().slice(0,7);
   g("dash-vtas").innerHTML=uvtas.length?
-    `<table class="t"><thead><tr><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Total</th></tr></thead>
+    `<table class="t"><thead><tr><th>Fecha</th><th>Cliente</th>${admin?"<th>Vendedor</th>":""}<th>Envío</th><th>Total</th></tr></thead>
      <tbody>${uvtas.map(v=>`<tr>
        <td style="font-size:12px">${fd(v.Fecha)}</td>
        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.ClienteNombre||"—"}</td>
-       <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
+       ${admin?`<td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>`:""}
+       <td>${trackBadge(v.EstadoEnvio)}</td>
        <td style="font-weight:700">${Q(v.Total)}</td></tr>`).join("")}</tbody></table>`:
     `<div class="empty"><i class="bi bi-receipt"></i>Sin ventas aún</div>`;
-  g("dash-stock").innerHTML=bajo.length?
-    `<table class="t"><thead><tr><th>SKU</th><th>Nombre</th><th>Talla</th><th>Stock</th></tr></thead>
-     <tbody>${bajo.map(p=>`<tr>
-       <td><code style="font-size:11px">${p.SKU}</code></td>
-       <td style="font-size:12px">${p.Nombre}</td><td>${p.Talla}</td>
-       <td><span class="b bs">${p.StockActual}</span></td></tr>`).join("")}</tbody></table>`:
-    `<div class="empty"><i class="bi bi-check-circle" style="color:var(--green);opacity:.6"></i>
-     <div style="color:var(--green);font-weight:600">Todo en orden</div></div>`;
+
+  // Stock bajo — solo admin
+  if(admin){
+    g("dash-stock").innerHTML=bajo.length?
+      `<table class="t"><thead><tr><th>SKU</th><th>Nombre</th><th>Talla</th><th>Stock</th></tr></thead>
+       <tbody>${bajo.map(p=>`<tr>
+         <td><code style="font-size:11px">${p.SKU}</code></td>
+         <td style="font-size:12px">${p.Nombre}</td><td>${p.Talla}</td>
+         <td><span class="b bs">${p.StockActual}</span></td></tr>`).join("")}</tbody></table>`:
+      `<div class="empty"><i class="bi bi-check-circle" style="color:var(--green);opacity:.6"></i>
+       <div style="color:var(--green);font-weight:600">Todo en orden</div></div>`;
+  }else{
+    g("dash-stock").parentElement.style.display="none";
+  }
 }
 
 // ╔═══════════════════════════════════════════════╗
@@ -1279,11 +1302,23 @@ function buscarCliente(){
 function renderProds(){
   const q=(g("q-prod").value||"").toLowerCase();
   const cat=g("f-cat").value,tal=g("f-tal").value;
+  const admin=isAdmin();
   const ls=prods.filter(p=>
     (!q||String(p.Nombre||"").toLowerCase().includes(q)||String(p.SKU||"").toLowerCase().includes(q))&&
     (!cat||p.Categoria===cat)&&(!tal||String(p.Talla)===tal));
   const tb=g("tb-prod");
-  if(!ls.length){tb.innerHTML=`<tr><td colspan="13"><div class="empty"><i class="bi bi-box-seam"></i>Sin productos</div></td></tr>`;return}
+
+  // Actualizar header según rol
+  const thead=g("thead-prod");
+  if(thead){
+    thead.innerHTML=`<tr>
+      <th>Img</th><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Color</th><th>Medidas</th>
+      ${admin?"<th>Costo</th><th>P.Venta</th><th>Margen</th>":"<th>P.Venta</th>"}
+      <th>Stock</th><th>Ubicación</th>${admin?"<th></th>":""}
+    </tr>`;
+  }
+
+  if(!ls.length){tb.innerHTML=`<tr><td colspan="${admin?13:10}"><div class="empty"><i class="bi bi-box-seam"></i>Sin productos</div></td></tr>`;return}
   const low=p=>(+p.StockActual||0)<=(+p.StockMinimo||0);
   const mrg=p=>+p.Costo>0?(((+p.PrecioVenta-+p.Costo)/+p.Costo)*100).toFixed(0)+"%":"—";
   tb.innerHTML=ls.map(p=>`<tr>
@@ -1294,12 +1329,10 @@ function renderProds(){
     <td style="text-align:center;font-weight:600">${p.Talla}</td>
     <td style="font-size:12px;color:var(--mink)">${p.Color||"—"}</td>
     <td style="font-size:12px;color:var(--mink)">${p.Medidas||"—"}</td>
-    <td>${Q(p.Costo)}</td>
-    <td style="font-weight:600">${Q(p.PrecioVenta)}</td>
-    <td style="color:var(--green);font-weight:600">${mrg(p)}</td>
+    ${admin?`<td>${Q(p.Costo)}</td><td style="font-weight:600">${Q(p.PrecioVenta)}</td><td style="color:var(--green);font-weight:600">${mrg(p)}</td>`:`<td style="font-weight:600">${Q(p.PrecioVenta)}</td>`}
     <td class="${low(p)?"slow":""}">${p.StockActual}${low(p)?' <span class="b bw" style="font-size:10px">⚠️</span>':""}</td>
     <td style="font-size:12px;color:var(--mink)">${p.Ubicacion||""}</td>
-    <td><button onclick="openProd(${p._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px"><i class="bi bi-pencil"></i></button></td>
+    ${admin?`<td><button onclick="openProd(${p._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px"><i class="bi bi-pencil"></i></button></td>`:""}
   </tr>`).join("");
 }
 
