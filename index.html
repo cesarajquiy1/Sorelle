@@ -504,13 +504,17 @@ table.t tbody tr:last-child{border-bottom:none}
         <div class="fg"><label class="fl">Stock Mínimo</label><input type="number" class="fc" id="p-min" placeholder="3" min="0"></div>
       </div>
       <div class="fg">
-        <label class="fl">Imagen <span style="font-weight:400;text-transform:none">(JPG/PNG máx 500KB)</span></label>
-        <div class="upa" onclick="g('p-img-in').click()" id="img-area">
-          <input type="file" id="p-img-in" accept="image/*" onchange="prevImg(this)">
-          <i class="bi bi-image" style="font-size:26px;color:var(--mink);display:block;margin-bottom:6px"></i>
-          <div style="font-size:13px;color:var(--mink)">Clic para subir imagen</div>
+        <label class="fl">Imagen — Link de OneDrive</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="fc" id="p-img-url" placeholder="Pega aquí el link de OneDrive de la imagen..." oninput="prevImgUrl(this.value)" style="flex:1">
+          <button class="bg" onclick="g('p-img-url').value='';g('img-preview').style.display='none'" title="Limpiar"><i class="bi bi-x"></i></button>
         </div>
-        <input type="hidden" id="p-img-url">
+        <div style="font-size:11px;color:var(--mink);margin-bottom:8px">
+          <i class="bi bi-info-circle"></i> En OneDrive: clic derecho en la imagen → Compartir → Copiar link → pégalo aquí
+        </div>
+        <div id="img-preview" style="display:none;border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:160px;text-align:center;background:var(--bone)">
+          <img id="img-prev-el" src="" style="max-height:160px;max-width:100%;object-fit:contain" onerror="g('img-preview').style.display='none'">
+        </div>
       </div>
     </div>
     <div class="mft">
@@ -742,18 +746,38 @@ async function updStock(p,nuevoStock){
   return updRaw(TBL.P,p._i,raw);
 }
 
-// Subir imagen a OneDrive
-async function uploadImg(file,sku){
-  await getToken();
-  const ext=file.name.split(".").pop();
-  const fn=sku.replace(/[^a-z0-9]/gi,"_")+"."+ext;
-  const url=`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/root:/Sorelle-Imagenes/${fn}:/content`;
-  const r=await fetch(url,{method:"PUT",headers:{Authorization:"Bearer "+tok,"Content-Type":file.type},body:await file.arrayBuffer()});
-  if(!r.ok)throw new Error("Error al subir imagen");
-  const d=await r.json();
-  const sh=await fetch(`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${d.id}/thumbnails`,{headers:{Authorization:"Bearer "+tok}});
-  const sd=await sh.json();
-  return sd?.value?.[0]?.large?.url||d.webUrl||"";
+// Convierte links de compartir de OneDrive a links directos de imagen
+function convertODLink(url){
+  if(!url)return"";
+  // Si ya es un link directo (termina en imagen), usarlo tal cual
+  if(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url))return url;
+  // Links de compartir de OneDrive — convertir a link de descarga directa
+  if(url.includes("1drv.ms")||url.includes("onedrive.live.com")||url.includes("sharepoint.com")){
+    try{
+      // Para links de SharePoint/OneDrive usar embed directo
+      if(url.includes("sharepoint.com")){
+        // Reemplazar action=default por action=embedview para mostrar imagen
+        return url.replace("action=default","action=embedview").replace("action=view","action=embedview");
+      }
+      // Para 1drv.ms: agregar parámetro de descarga
+      return url.includes("?")?url+"&download=1":url+"?download=1";
+    }catch{return url}
+  }
+  return url;
+}
+
+function prevImgUrl(url){
+  const clean=convertODLink(url);
+  const prev=g("img-preview");const img=g("img-prev-el");
+  if(!clean){prev.style.display="none";return}
+  img.src=clean;prev.style.display="block";
+  img.onerror=()=>{
+    prev.style.display="block";
+    prev.innerHTML=`<div style="padding:20px;color:var(--mink);font-size:13px">
+      <i class="bi bi-exclamation-triangle" style="color:var(--orange)"></i>
+      No se puede previsualizar. El link se guardará igual.<br>
+      <span style="font-size:11px">Asegúrate que el link sea público o compartido con "cualquiera"</span></div>`;
+  };
 }
 
 // ╔═══════════════════════════════════════════════╗
@@ -919,18 +943,30 @@ async function confirmarVenta(){
 
     showLo("Guardando cliente (4/4)...");
     try{
-      const ci=clis.findIndex(c=>nit!=="CF"
-        ?String(c.NIT||"").toUpperCase()===nit.toUpperCase()
-        :String(c.Nombre||"").toUpperCase()===nom.toUpperCase());
+      // Determinar clave de búsqueda
+      const esCF = !nit || nit.toUpperCase()==="CF";
+      const ci = esCF
+        ? clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
+        : clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
+
       if(ci<0){
-        await addRow(TBL.C,[nit,nom,tel,dir,1]);
+        // Nuevo cliente — enviar exactamente 5 columnas que espera la tabla
+        await addRow(TBL.C,[nit||"CF", nom, tel, dir, 1]);
       }else{
-        const c=clis[ci];const raw=[...c._raw];
-        raw[2]=raw[2]||tel;raw[3]=raw[3]||dir;
+        const c=clis[ci];
+        const raw=[...c._raw];
+        // Actualizar solo campos vacíos y sumar venta
+        if(!raw[2]&&tel) raw[2]=tel;
+        if(!raw[3]&&dir) raw[3]=dir;
         raw[4]=(+raw[4]||0)+1;
         await updRaw(TBL.C,c._i,raw);
       }
-    }catch(e){console.warn("cliente:",e.message)}
+    }catch(e){
+      // Log del error real para diagnóstico — no interrumpe la venta
+      console.error("Error guardando cliente:",e.message);
+      // Mostrar en toast para que el usuario lo vea
+      toast("⚠️ Venta guardada, pero hubo un problema con el cliente: "+e.message,"#e0923b");
+    }
 
     // Limpiar formulario
     cart=[];renderCart();
@@ -1083,8 +1119,7 @@ function renderProds(){
 function openProd(idx=null){
   g("p-idx").value=idx!==null?idx:"";
   g("mp-tit").textContent=idx!==null?"Editar Producto":"Nuevo Producto";
-  g("p-img-url").value="";
-  g("img-area").innerHTML=`<input type="file" id="p-img-in" accept="image/*" onchange="prevImg(this)"><i class="bi bi-image" style="font-size:26px;color:var(--mink);display:block;margin-bottom:6px"></i><div style="font-size:13px;color:var(--mink)">Clic para subir imagen</div>`;
+  g("img-preview").style.display="none";
   if(idx!==null){
     const p=prods[idx];
     g("p-sku").value=p.SKU||"";g("p-nom").value=p.Nombre||"";
@@ -1095,21 +1130,14 @@ function openProd(idx=null){
     g("p-cos").value=p.Costo||"";g("p-pvt").value=p.PrecioVenta||"";
     g("p-stk").value=p.StockActual||"0";g("p-min").value=p.StockMinimo||"3";
     g("p-img-url").value=p.ImagenURL||"";
-    if(p.ImagenURL)g("img-area").innerHTML+=`<img src="${p.ImagenURL}" style="max-height:60px;border-radius:6px;margin-top:6px">`;
+    if(p.ImagenURL)prevImgUrl(p.ImagenURL);
   }else{
-    ["p-sku","p-nom","p-prov","p-cos","p-pvt","p-col","p-med"].forEach(id=>g(id).value="");
+    ["p-sku","p-nom","p-prov","p-cos","p-pvt","p-col","p-med","p-img-url"].forEach(id=>g(id).value="");
     g("p-stk").value="0";g("p-min").value="3";
   }
   g("m-prod").style.display="flex";
 }
 
-function prevImg(input){
-  const f=input.files[0];if(!f)return;
-  if(f.size>600*1024){alert("Imagen demasiado grande. Máximo 500KB.");input.value="";return}
-  const r=new FileReader();
-  r.onload=e=>{g("img-area").innerHTML+=`<img src="${e.target.result}" style="max-height:60px;border-radius:6px;margin-top:6px">`};
-  r.readAsDataURL(f);
-}
 
 async function saveProd(){
   const sku=g("p-sku").value.trim(),nom=g("p-nom").value.trim();
@@ -1117,15 +1145,12 @@ async function saveProd(){
   const idx=g("p-idx").value;
   showLo("Guardando...");
   try{
-    let img=g("p-img-url").value||"";
-    const imgIn=g("p-img-in");
-    if(imgIn&&imgIn.files&&imgIn.files[0]){showLo("Subiendo imagen...");img=await uploadImg(imgIn.files[0],sku)}
+    const img=g("p-img-url").value.trim();
     const vals=[sku,nom,g("p-cat").value,g("p-tal").value,g("p-col").value.trim(),
       g("p-med").value.trim(),g("p-prov").value.trim(),g("p-ubic").value,
       parseFloat(g("p-cos").value)||0,parseFloat(g("p-pvt").value)||0,
       parseInt(g("p-stk").value)||0,parseInt(g("p-min").value)||3,img,true];
     if(idx!==""){
-      // Editar — usar raw del producto original, actualizar cada campo
       const p=prods[+idx];
       const raw=[...p._raw];
       vals.forEach((v,i)=>{if(i<raw.length)raw[i]=v;});
