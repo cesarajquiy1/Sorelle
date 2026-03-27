@@ -249,13 +249,13 @@ table.t tbody tr:last-child{border-bottom:none}
       <button class="ni active" data-page="dashboard" onclick="goPage(this)"><i class="bi bi-grid-1x2"></i>Dashboard</button>
       <div class="sb-sec">Ventas</div>
       <button class="ni" data-page="ventas" onclick="goPage(this)"><i class="bi bi-receipt"></i>Nueva Venta</button>
-      <button class="ni" data-page="historial" onclick="goPage(this)"><i class="bi bi-clock-history"></i>Historial</button>
-      <button class="ni" data-page="clientes" onclick="goPage(this)"><i class="bi bi-people"></i>Clientes</button>
+      <button class="ni" id="nav-historial" data-page="historial" onclick="goPage(this)"><i class="bi bi-clock-history"></i>Historial</button>
+      <button class="ni" id="nav-clientes" data-page="clientes" onclick="goPage(this)"><i class="bi bi-people"></i>Clientes</button>
       <div class="sb-sec">Inventario</div>
       <button class="ni" data-page="productos" onclick="goPage(this)"><i class="bi bi-box-seam"></i>Productos</button>
-      <button class="ni" data-page="movimientos" onclick="goPage(this)"><i class="bi bi-arrow-left-right"></i>Movimientos</button>
-      <div class="sb-sec">Análisis</div>
-      <button class="ni" data-page="reportes" onclick="goPage(this)"><i class="bi bi-bar-chart-line"></i>Reportes</button>
+      <button class="ni" id="nav-movimientos" data-page="movimientos" onclick="goPage(this)"><i class="bi bi-arrow-left-right"></i>Movimientos</button>
+      <div class="sb-sec" id="nav-sec-analisis">Análisis</div>
+      <button class="ni" id="nav-reportes" data-page="reportes" onclick="goPage(this)"><i class="bi bi-bar-chart-line"></i>Reportes</button>
     </div>
     <div class="sb-bot">
       <div class="urow"><div class="uav" id="uavatar">?</div><div id="uname">...</div></div>
@@ -377,7 +377,7 @@ table.t tbody tr:last-child{border-bottom:none}
           <div class="fg2" style="flex:2"><input class="fc" id="hvend" placeholder="Filtrar vendedor..." oninput="renderHist()"></div>
         </div>
         <div class="tw"><table class="t">
-          <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Envío</th><th>Pago</th><th>Total</th><th></th></tr></thead>
+          <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Envío</th><th>Pago</th><th>Total</th><th>Estado</th><th></th></tr></thead>
           <tbody id="tb-hist"></tbody>
         </table></div>
       </div>
@@ -589,7 +589,9 @@ const CFG={
   fileId:  "01632IMGWS346IRE4DPFB32IQTBQQ5F6R6",
   driveId: "b!g0ySFvrDWka56zZs1r4ESVsijK3fx9lNjrLBCUK5maWsMdXmFlbpTrHhhhJ54WvS",
   cur:     "Q ",
-  store:   "Sorelle Inversiones S.A."
+  store:   "Sorelle Inversiones S.A.",
+  // Correos con acceso completo (admin) — agregar más separados por coma
+  admins:  ["ventas@moda57.com","gerencia@moda57.com"]
 };
 
 // Nombres de tablas en Excel — deben coincidir exactamente
@@ -599,7 +601,7 @@ const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVenta
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","RefVenta"];
 const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas"];
-const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas"];
+const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
 // Guarda los encabezados reales leídos del Excel
@@ -692,6 +694,11 @@ function signOut(){
   g("app").style.display="none";showLogin();
 }
 
+function isAdmin(){
+  const email=(me?.username||me?.name||"").toLowerCase();
+  return CFG.admins.some(a=>a.toLowerCase()===email);
+}
+
 function bootApp(){
   g("login-screen").style.display="none";
   g("app").style.display="block";
@@ -700,6 +707,22 @@ function bootApp(){
   g("uavatar").textContent=(name[0]||"U").toUpperCase();
   g("v-vend").value=name;
   g("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
+
+  // Aplicar rol — ocultar secciones según permisos
+  const admin=isAdmin();
+  // Secciones solo para admin
+  ["nav-historial","nav-clientes","nav-movimientos","nav-reportes",
+   "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
+    const e=g(id);if(e)e.style.display=admin?"":"none";
+  });
+  // Si no es admin, ir directo a ventas al cargar
+  if(!admin){
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".ni").forEach(b=>b.classList.remove("active"));
+    g("page-ventas").classList.add("active");
+    const btnV=document.querySelector('.ni[data-page="ventas"]');
+    if(btnV)btnV.classList.add("active");
+  }
   refreshData();
 }
 
@@ -1005,7 +1028,8 @@ async function confirmarVenta(){
     const pago=g("v-pago").value;
     const notas=g("v-notas").value.trim();
 
-    await addRow(TBL.V,[id,fh,vnd,nit,nom,tel,dir,envio,pago,sub,env,tot,notas]);
+    const estadoInicial=envio==="Tienda"?"Entregado":"En Ruta";
+    await addRow(TBL.V,[id,fh,vnd,nit,nom,tel,dir,envio,pago,sub,env,tot,notas,estadoInicial]);
 
     showLo("Guardando detalle (2/4)...");
     for(const it of snap) await addRow(TBL.D,[id,it.sku,it.nom,it.tal,it.q,it.pv,it.sub]);
@@ -1019,26 +1043,38 @@ async function confirmarVenta(){
 
     showLo("Guardando cliente (4/4)...");
     try{
-      const hdrsC=realHeaders.C&&realHeaders.C.length?realHeaders.C:CC;
+      // Usar CC como fallback si no se leyeron headers reales
+      const hdrsC=(realHeaders.C&&realHeaders.C.length>=3)?realHeaders.C:CC;
+      console.log("Headers Clientes:",hdrsC,"| NIT:",nit,"| Nombre:",nom);
+
       const esCF=!nit||nit.toUpperCase()==="CF";
       const ci=esCF
         ?clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
         :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
+
       if(ci<0){
-        // Nuevo cliente — construir array según headers reales del Excel
-        const cmap={NIT:nit||"CF",Nombre:nom,Telefono:tel,Direccion:dir,TotalVentas:1};
-        const cVals=hdrsC.map(h=>cmap.hasOwnProperty(h)?cmap[h]:"");
-        await addRow(TBL.C,cVals);
+        // Nuevo cliente — siempre enviar exactamente CC.length valores
+        // independiente de los headers reales para evitar desalineación
+        const cVals=[nit||"CF", nom, tel||"", dir||"", 1];
+        // Si headers reales tienen más columnas, rellenar con vacío
+        while(cVals.length<hdrsC.length)cVals.push("");
+        // Si headers tienen menos, recortar
+        const cFinal=cVals.slice(0,hdrsC.length);
+        console.log("Guardando cliente nuevo:",cFinal);
+        await addRow(TBL.C,cFinal);
       }else{
         const c=clis[ci];const raw=[...c._raw];
         const ti=hdrsC.indexOf("Telefono"),di=hdrsC.indexOf("Direccion"),vi=hdrsC.indexOf("TotalVentas");
-        if(ti>=0&&ti<raw.length&&!raw[ti])raw[ti]=tel;
-        if(di>=0&&di<raw.length&&!raw[di])raw[di]=dir;
+        if(ti>=0&&ti<raw.length&&!raw[ti])raw[ti]=tel||"";
+        if(di>=0&&di<raw.length&&!raw[di])raw[di]=dir||"";
         if(vi>=0&&vi<raw.length)raw[vi]=(+raw[vi]||0)+1;
+        else if(raw.length>4)raw[4]=(+raw[4]||0)+1; // fallback posición 4
+        console.log("Actualizando cliente existente idx:",c._i);
         await updRaw(TBL.C,c._i,raw);
       }
+      // cliente guardado
     }catch(e){
-      console.error("Error guardando cliente:",e.message);
+      console.error("❌ Error guardando cliente:",e.message,e);
       setTimeout(()=>toast("⚠️ Cliente no guardado: "+e.message,"#e0923b"),500);
     }
 
@@ -1108,6 +1144,16 @@ function printRcp(){g("rcp").style.display="block";window.print();g("rcp").style
 // ╔═══════════════════════════════════════════════╗
 // ║  HISTORIAL                                   ║
 // ╚═══════════════════════════════════════════════╝
+function trackBadge(estado){
+  const map={
+    "En Ruta":    "background:#fff3cd;color:#856404",
+    "Entregado":  "background:#d4edda;color:#1a7a3a",
+    "No Recibió": "background:#fce4e8;color:#a02040"
+  };
+  const st=estado||"En Ruta";
+  return `<span class="b" style="${map[st]||"background:#eee;color:#555"}">${st}</span>`;
+}
+
 function renderHist(){
   const fi=g("hfi").value,ff=g("hff").value,pg=g("hpago").value,vn=g("hvend").value.toLowerCase();
   const ls=vtas.filter(v=>{
@@ -1115,17 +1161,84 @@ function renderHist(){
     return(!fi||f>=fi)&&(!ff||f<=ff)&&(!pg||v.MetodoPago===pg)&&(!vn||(v.Vendedor||"").toLowerCase().includes(vn));
   });
   const tb=g("tb-hist");
-  if(!ls.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty"><i class="bi bi-receipt"></i>Sin ventas</div></td></tr>`;return}
+  if(!ls.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty"><i class="bi bi-receipt"></i>Sin ventas</div></td></tr>`;return}
+  const admin=isAdmin();
   tb.innerHTML=[...ls].reverse().map(v=>`<tr>
     <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.ID||"—"}</td>
     <td style="white-space:nowrap;font-size:12px">${fd(v.Fecha)}</td>
-    <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${v.ClienteNombre||"—"}</td>
+    <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${v.ClienteNombre||"—"}</td>
     <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
     <td><span class="b ${v.TipoEnvio==="Moto"?"bbl":v.TipoEnvio==="Cargo Expresso"?"bpu":"bgy"}">${v.TipoEnvio||"—"}</span></td>
     <td><span class="b ${v.MetodoPago==="Efectivo"?"bgr":v.MetodoPago==="Transferencia"?"bbl":"bc"}">${v.MetodoPago||"—"}</span></td>
     <td style="font-weight:700">${Q(v.Total)}</td>
-    <td><button onclick="verVenta('${v.ID}')" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:4px 6px;border-radius:6px;font-weight:600"><i class="bi bi-eye"></i></button></td>
+    <td>${trackBadge(v.EstadoEnvio)}</td>
+    <td style="white-space:nowrap">
+      <button onclick="verVenta('${v.ID}')" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:3px 6px;border-radius:6px;font-weight:600" title="Ver detalle"><i class="bi bi-eye"></i></button>
+      ${admin&&v.EstadoEnvio!=="Entregado"?`
+        <select onchange="cambiarEstado('${v.ID}',this.value,this)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--ink)" title="Cambiar estado">
+          <option value="">Estado...</option>
+          <option value="En Ruta" ${v.EstadoEnvio==="En Ruta"?"selected":""}>En Ruta</option>
+          <option value="Entregado">Entregado</option>
+          <option value="No Recibió">No Recibió</option>
+        </select>`:""}
+    </td>
   </tr>`).join("");
+}
+
+async function cambiarEstado(ventaId, nuevoEstado, selectEl){
+  if(!nuevoEstado)return;
+  const v=vtas.find(x=>x.ID===ventaId);
+  if(!v)return;
+
+  // Confirmación para "No Recibió" porque devuelve stock
+  if(nuevoEstado==="No Recibió"){
+    const ds=dtls.filter(d=>d.VentaID===ventaId);
+    const lista=ds.map(d=>`• ${d.Producto} T${d.Talla} × ${d.Cantidad}`).join("\n");
+    const ok=confirm(
+      `⚠️ Marcar como "No Recibió" devolverá el stock al inventario:\n\n${lista}\n\n¿Confirmar?`
+    );
+    if(!ok){selectEl.value=v.EstadoEnvio||"En Ruta";return}
+  }
+
+  showLo("Actualizando estado...");
+  try{
+    // Actualizar EstadoEnvio en la fila de Ventas
+    const hdrsV=realHeaders.V&&realHeaders.V.length?realHeaders.V:CV;
+    const raw=[...v._raw];
+    const ei=hdrsV.indexOf("EstadoEnvio");
+    if(ei>=0&&ei<raw.length){
+      raw[ei]=nuevoEstado;
+    }else{
+      // Si la columna no existe aún, agregarla al final
+      raw.push(nuevoEstado);
+    }
+    await updRaw(TBL.V,v._i,raw);
+
+    // Si "No Recibió" → devolver stock y registrar movimientos de devolución
+    if(nuevoEstado==="No Recibió"){
+      const ds=dtls.filter(d=>d.VentaID===ventaId);
+      const fh=localDate();
+      for(const d of ds){
+        // Buscar el producto en prods por SKU
+        const p=prods.find(x=>x.SKU===d.SKU&&String(x.Talla)===String(d.Talla));
+        if(p){
+          const nuevoStock=(+p.StockActual||0)+(+d.Cantidad||0);
+          await updStock(p,nuevoStock);
+          await addRow(TBL.M,[Date.now()+"",d.SKU,d.Producto,"Entrada",d.Cantidad,fh,
+            me.name||"Admin",0,0,"Devolución VTA: "+ventaId]);
+        }
+      }
+      toast("🔄 Stock devuelto al inventario","#7c6cd1");
+    }else{
+      toast("✅ Estado actualizado: "+nuevoEstado,"#3db88a");
+    }
+
+    await refreshData();
+  }catch(e){
+    hideLo();
+    alert("Error al cambiar estado:\n"+e.message);
+    selectEl.value=v.EstadoEnvio||"En Ruta";
+  }
 }
 
 function verVenta(id){
