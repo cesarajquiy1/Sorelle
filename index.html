@@ -219,7 +219,8 @@ table.t tbody tr:last-child{border-bottom:none}
   background:var(--ink);z-index:200;align-items:center;padding:0 16px;gap:12px}
 #mob-bar .mob-brand{font-family:var(--fd);font-size:1.4rem;font-weight:700;color:var(--rose);flex:1}
 #mob-menu-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px}
-#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:149}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:149;pointer-events:none}
+#sidebar-overlay.open{display:block;pointer-events:auto}
 
 /* ── TABLET ── */
 @media(max-width:900px){
@@ -232,47 +233,31 @@ table.t tbody tr:last-child{border-bottom:none}
 /* ── MOBILE ── */
 @media(max-width:640px){
   :root{--sw:224px}
-  /* Sidebar oculto por defecto en mobile */
-  #sidebar{transform:translateX(-224px);transition:transform .25s ease;box-shadow:none}
+  #sidebar{transform:translateX(-224px);transition:transform .25s ease;box-shadow:none;z-index:160}
   #sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.4)}
-  #sidebar-overlay.open{display:block}
   #mob-bar{display:flex}
   #app{display:block}
-  #main{margin-left:0;padding:70px 14px 80px}
-
-  /* Grids */
+  #main{margin-left:0!important;padding:70px 14px 80px}
   .kg{grid-template-columns:1fr 1fr;gap:10px}
   .kv{font-size:1.6rem}.kc{padding:14px 12px}
   .cgrid,.dg2{grid-template-columns:1fr}
   .fr.c2,.fr.c3,.fr.c4{grid-template-columns:1fr}
   .ph{flex-direction:column;align-items:flex-start;gap:8px}
-
-  /* Cards */
   .card{border-radius:10px}
   .frow{flex-direction:column;gap:8px;padding:12px}
   .fg2{min-width:unset}
-
-  /* Venta: columnas en mobile */
   #page-ventas>[style*="grid"]{display:flex;flex-direction:column;gap:14px}
-
-  /* Tablas: scroll horizontal */
   .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table.t{min-width:500px}
   table.t thead th{font-size:10px;padding:8px 10px}
   table.t tbody td{padding:9px 10px;font-size:12px}
-
-  /* Modal full-screen en mobile */
   .mo{padding:0;align-items:flex-end}
   .mb{border-radius:20px 20px 0 0;max-height:95vh}
   .msm,.mmd,.mlg{max-width:100%}
   .mhd{padding:18px 18px 0}
   .mbd{padding:14px 18px}
   .mft{padding:12px 18px 24px}
-
-  /* Cart sticky en mobile */
   #page-ventas .card[style*="sticky"]{position:relative;top:0}
-
-  /* Bottom nav bar para mobile */
   #mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;
     background:var(--ink);border-top:1px solid rgba(255,255,255,.1);
     z-index:150;padding:6px 0 env(safe-area-inset-bottom,6px)}
@@ -283,7 +268,15 @@ table.t tbody tr:last-child{border-bottom:none}
   .mob-ni.active{color:var(--rose)}
 }
 
-/* ── HIDE MOBILE NAV ON DESKTOP ── */
+/* ── DESKTOP — sidebar siempre visible ── */
+@media(min-width:641px){
+  #sidebar{transform:none!important;transition:none}
+  #sidebar-overlay{display:none!important}
+  #mob-bar{display:none!important}
+  #mob-nav{display:none!important}
+  #main{margin-left:var(--sw);padding:32px}
+}
+
 #mob-nav{display:none}
 </style>
 </head>
