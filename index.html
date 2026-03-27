@@ -529,9 +529,22 @@ async function gapi(method,path,body){
   return r.status===204?null:r.json();
 }
 async function getRows(tbl){const d=await gapi("GET",`/tables/${tbl}/rows`);return d?.value||[]}
-function toObjs(rows,cols){return rows.map((r,i)=>{const o={_i:i};cols.forEach((c,j)=>o[c]=r.values[0][j]);return o})}
+// Guarda _raw para que updRow use exactamente los mismos valores que vinieron del Excel
+function toObjs(rows,cols){return rows.map((r,i)=>{const o={_i:i,_raw:[...r.values[0]]};cols.forEach((c,j)=>{if(j<r.values[0].length)o[c]=r.values[0][j]});return o})}
 async function addRow(tbl,vals){return gapi("POST",`/tables/${tbl}/rows/add`,{values:[vals]})}
 async function updRow(tbl,i,vals){return gapi("PATCH",`/tables/${tbl}/rows/$/itemAt(index=${i})`,{values:[vals]})}
+
+// Actualiza SOLO StockActual sin tocar el resto de columnas — evita el error de dimensiones
+async function updStock(prod,nuevoStock){
+  const raw=[...prod._raw]; // copia exacta de lo que vino del Excel
+  // Encontrar índice de StockActual en los datos reales
+  const stockIdx=prod._raw.length>10?10:prod._raw.length-3; // pos 10 en tabla nueva, ajusta si es necesario
+  // Buscar por valor actual de StockActual
+  const actualIdx=raw.findIndex((v,i)=>i>5&&v===+prod.StockActual);
+  const idx=actualIdx>=0?actualIdx:stockIdx;
+  raw[idx]=nuevoStock;
+  return updRow(TBL.prod,prod._i,raw);
+}}
 
 // Subir imagen a OneDrive
 async function uploadImg(file,sku){
@@ -682,29 +695,43 @@ async function confirmarVenta(){
       await addRow(TBL.mov,[Date.now().toString(),it.sku,it.nombre,"Salida",it.cant,fecha,vendedor,it.precio,it.sub,id]);
       const p=prods[it.idx];
       const nuevoStock=Math.max(0,(+p.StockActual||0)-it.cant);
-      await updRow(TBL.prod,p._i,CP.map(c=>c==="StockActual"?nuevoStock:p[c]));
+      await updStock(p,nuevoStock);  // usa valores originales del Excel
     }
 
-    // 4. Auto-guardar cliente (sin requerir tabla separada si falla)
+    // 4. Auto-guardar cliente
     showLo("Guardando cliente (4/4)...");
     try{
       const cliExiste=clis.findIndex(c=>String(c.NIT).toUpperCase()===nit.toUpperCase());
-      if(cliExiste<0&&nit){
-        await addRow(TBL.cli,[nit,nombre,tel,dir,1]);
-      } else if(cliExiste>=0){
-        // Incrementar contador de ventas
+      if(cliExiste<0&&nit) await addRow(TBL.cli,[nit,nombre,tel,dir,1]);
+      else if(cliExiste>=0){
         const c=clis[cliExiste];
         await updRow(TBL.cli,c._i,[c.NIT,c.Nombre,c.Telefono||tel,c.Direccion||dir,(+c.TotalVentas||0)+1]);
       }
-    }catch(e){console.warn("No se pudo guardar cliente (no crítico):",e.message)}
+    }catch(e){console.warn("Cliente no crítico:",e.message)}
 
-    // Mostrar recibo
-    const ventaData={id,fecha,vendedor,nit,nombre,tel,dir,envio:el("v-envio").value,pago:el("v-pago").value,sub,env,total,notas:el("v-notas").value,items:[...cart]};
-    mostrarRecibo(ventaData);
+    // Capturar datos para recibo ANTES de limpiar
+    const itemsSnapshot=[...cart];
+    const ventaData={id,fecha,vendedor,nit,nombre,tel,dir,
+      envio:el("v-envio").value,pago:el("v-pago").value,
+      sub,env,total,notas:el("v-notas").value,items:itemsSnapshot};
+
+    // ✅ Limpiar formulario
     cart=[];renderCart();
     ["v-nit","v-nombre","v-tel","v-dir","v-notas"].forEach(id=>el(id).value="");
     el("v-cenv").value="0";
+
+    // Recargar datos y redirigir al dashboard
     await refreshData();
+
+    // Mostrar recibo en modal y navegar a dashboard
+    mostrarRecibo(ventaData);
+    // Navegar al dashboard en el fondo
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".ni").forEach(b=>b.classList.remove("active"));
+    el("page-dashboard").classList.add("active");
+    document.querySelector('.ni[onclick*="dashboard"]').classList.add("active");
+    showToast(`✅ Venta ${id} registrada — ${CFG.currency}${fmt2(total)}`);
+
   }catch(e){hideLo();alert("❌ Error al guardar la venta:\n"+e.message)}
 }
 
@@ -1013,6 +1040,14 @@ function el(id){return document.getElementById(id)}
 function fmt2(n){return(parseFloat(n)||0).toFixed(2)}
 function fmtDate(d){if(!d)return"—";try{return new Date(d).toLocaleDateString("es-GT",{day:"2-digit",month:"2-digit",year:"numeric"})}catch{return String(d).substring(0,10)}}
 function popSel(id,items,ph){const s=el(id);if(!s)return;const cur=s.value;s.innerHTML=`<option value="">${ph}</option>`;items.forEach(i=>s.add(new Option(i,i)));s.value=cur}
+
+// Toast de notificación
+function showToast(msg,color="var(--green)"){
+  let t=document.getElementById("toast-notif");
+  if(!t){t=document.createElement("div");t.id="toast-notif";t.style.cssText="position:fixed;bottom:28px;right:28px;padding:14px 20px;border-radius:12px;color:#fff;font-size:14px;font-weight:600;z-index:9998;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .3s;max-width:340px";document.body.appendChild(t)}
+  t.style.background=color;t.style.opacity="1";t.textContent=msg;
+  clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity="0",4000);
+}
 </script>
 </body>
 </html>
