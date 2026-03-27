@@ -595,12 +595,15 @@ const CFG={
 // Nombres de tablas en Excel — deben coincidir exactamente
 const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas"};
 
-// Columnas por tabla — el orden debe coincidir con el Excel
+// Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","RefVenta"];
 const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas"];
 const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
+
+// Guarda los encabezados reales leídos del Excel
+let realHeaders={P:[],M:[],C:[],V:[],D:[]};
 
 // ╔═══════════════════════════════════════════════╗
 // ║  ESTADO GLOBAL                               ║
@@ -713,13 +716,34 @@ async function getRows(tbl){
 }
 
 // toObjs guarda _raw para actualizaciones seguras
-function toObjs(rows,cols){
+// Obtener encabezados reales de una tabla
+async function getHeaders(tbl){
+  try{
+    const d=await api("GET",`/tables/${tbl}/headerRowRange`);
+    if(d&&d.values&&d.values[0])return d.values[0].map(h=>String(h).trim());
+  }catch(e){console.warn("No se pudieron leer headers de",tbl,e.message)}
+  return [];
+}
+
+// toObjs usa los encabezados reales del Excel — no asume posiciones
+function toObjs(rows,hdrs){
   return rows.map((r,i)=>{
     const raw=r.values[0];
     const o={_i:i,_raw:[...raw],_len:raw.length};
-    cols.forEach((c,j)=>{if(j<raw.length)o[c]=raw[j];});
+    // Mapear por nombre de columna usando headers reales
+    hdrs.forEach((h,j)=>{if(j<raw.length)o[h]=raw[j];});
     return o;
   });
+}
+
+// Construir array de valores en el orden exacto del Excel para updates
+function toRaw(obj,hdrs,newVals){
+  const raw=[...obj._raw];
+  Object.entries(newVals).forEach(([k,v])=>{
+    const i=hdrs.indexOf(k);
+    if(i>=0&&i<raw.length)raw[i]=v;
+  });
+  return raw;
 }
 
 async function addRow(tbl,vals){
@@ -731,18 +755,23 @@ async function updRaw(tbl,idx,raw){
   return api("PATCH",`/tables/${tbl}/rows/$/itemAt(index=${idx})`,{values:[raw]});
 }
 
-// Actualiza solo el stock — busca la columna por posición o por valor
+// Actualiza solo el stock usando la posición real de la columna
 async function updStock(p,nuevoStock){
   const raw=[...p._raw];
-  // Intentar encontrar el índice de StockActual buscando su valor actual
-  let si=-1;
-  for(let i=6;i<raw.length;i++){if(raw[i]===+p.StockActual||(typeof raw[i]==="number"&&Math.abs(raw[i]-+p.StockActual)<0.001)){si=i;break;}}
-  if(si<0){
-    // Fallback: buscar por nombre de columna
-    const ci=CP.indexOf("StockActual");
-    si=ci>=0&&ci<raw.length?ci:10;
+  // Buscar índice real de StockActual en los headers del Excel
+  const hdrs=realHeaders.P;
+  const si=hdrs.indexOf("StockActual");
+  if(si>=0&&si<raw.length){
+    raw[si]=nuevoStock;
+  }else{
+    // Fallback: buscar por valor numérico similar
+    let found=-1;
+    for(let i=5;i<raw.length;i++){
+      if(typeof raw[i]==="number"&&Math.abs(raw[i]-(+p.StockActual||0))<0.01){found=i;break;}
+    }
+    if(found>=0)raw[found]=nuevoStock;
+    else{console.warn("No se encontró columna StockActual, idx estimado:",si);raw[Math.min(10,raw.length-1)]=nuevoStock;}
   }
-  raw[si]=nuevoStock;
   return updRaw(TBL.P,p._i,raw);
 }
 
@@ -787,6 +816,18 @@ async function refreshData(){
   g("data-err").style.display="none";
   showLo("Cargando datos...");
   try{
+    // Leer encabezados reales del Excel primero
+    showLo("Leyendo estructura...");
+    const [hP,hM,hC,hV,hD]=await Promise.all([
+      getHeaders(TBL.P).catch(()=>CP),
+      getHeaders(TBL.M).catch(()=>CM),
+      getHeaders(TBL.C).catch(()=>CC),
+      getHeaders(TBL.V).catch(()=>CV),
+      getHeaders(TBL.D).catch(()=>CD)
+    ]);
+    realHeaders={P:hP.length?hP:CP,M:hM.length?hM:CM,C:hC.length?hC:CC,V:hV.length?hV:CV,D:hD.length?hD:CD};
+
+    showLo("Cargando datos...");
     const [pr,mr,cr,vr,dr]=await Promise.all([
       getRows(TBL.P).catch(()=>{throw new Error("Tabla 'Productos' no encontrada")}),
       getRows(TBL.M).catch(()=>[]),
@@ -794,11 +835,11 @@ async function refreshData(){
       getRows(TBL.V).catch(()=>[]),
       getRows(TBL.D).catch(()=>[])
     ]);
-    prods=toObjs(pr,CP);
-    movs=toObjs(mr,CM);
-    clis=toObjs(cr,CC);
-    vtas=toObjs(vr,CV);
-    dtls=toObjs(dr,CD);
+    prods=toObjs(pr,realHeaders.P);
+    movs=toObjs(mr,realHeaders.M);
+    clis=toObjs(cr,realHeaders.C);
+    vtas=toObjs(vr,realHeaders.V);
+    dtls=toObjs(dr,realHeaders.D);
     fillUI();
   }catch(e){
     hideLo();
@@ -943,29 +984,27 @@ async function confirmarVenta(){
 
     showLo("Guardando cliente (4/4)...");
     try{
-      // Determinar clave de búsqueda
-      const esCF = !nit || nit.toUpperCase()==="CF";
-      const ci = esCF
-        ? clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
-        : clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
-
+      const hdrsC=realHeaders.C&&realHeaders.C.length?realHeaders.C:CC;
+      const esCF=!nit||nit.toUpperCase()==="CF";
+      const ci=esCF
+        ?clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
+        :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
       if(ci<0){
-        // Nuevo cliente — enviar exactamente 5 columnas que espera la tabla
-        await addRow(TBL.C,[nit||"CF", nom, tel, dir, 1]);
+        // Nuevo cliente — construir array según headers reales del Excel
+        const cmap={NIT:nit||"CF",Nombre:nom,Telefono:tel,Direccion:dir,TotalVentas:1};
+        const cVals=hdrsC.map(h=>cmap.hasOwnProperty(h)?cmap[h]:"");
+        await addRow(TBL.C,cVals);
       }else{
-        const c=clis[ci];
-        const raw=[...c._raw];
-        // Actualizar solo campos vacíos y sumar venta
-        if(!raw[2]&&tel) raw[2]=tel;
-        if(!raw[3]&&dir) raw[3]=dir;
-        raw[4]=(+raw[4]||0)+1;
+        const c=clis[ci];const raw=[...c._raw];
+        const ti=hdrsC.indexOf("Telefono"),di=hdrsC.indexOf("Direccion"),vi=hdrsC.indexOf("TotalVentas");
+        if(ti>=0&&ti<raw.length&&!raw[ti])raw[ti]=tel;
+        if(di>=0&&di<raw.length&&!raw[di])raw[di]=dir;
+        if(vi>=0&&vi<raw.length)raw[vi]=(+raw[vi]||0)+1;
         await updRaw(TBL.C,c._i,raw);
       }
     }catch(e){
-      // Log del error real para diagnóstico — no interrumpe la venta
       console.error("Error guardando cliente:",e.message);
-      // Mostrar en toast para que el usuario lo vea
-      toast("⚠️ Venta guardada, pero hubo un problema con el cliente: "+e.message,"#e0923b");
+      setTimeout(()=>toast("⚠️ Cliente no guardado: "+e.message,"#e0923b"),500);
     }
 
     // Limpiar formulario
@@ -1146,16 +1185,24 @@ async function saveProd(){
   showLo("Guardando...");
   try{
     const img=g("p-img-url").value.trim();
-    const vals=[sku,nom,g("p-cat").value,g("p-tal").value,g("p-col").value.trim(),
-      g("p-med").value.trim(),g("p-prov").value.trim(),g("p-ubic").value,
-      parseFloat(g("p-cos").value)||0,parseFloat(g("p-pvt").value)||0,
-      parseInt(g("p-stk").value)||0,parseInt(g("p-min").value)||3,img,true];
+    // Mapa de valores nuevos por nombre de columna
+    const newVals={
+      SKU:sku,Nombre:nom,Categoria:g("p-cat").value,Talla:g("p-tal").value,
+      Color:g("p-col").value.trim(),Medidas:g("p-med").value.trim(),
+      Proveedor:g("p-prov").value.trim(),Ubicacion:g("p-ubic").value,
+      Costo:parseFloat(g("p-cos").value)||0,PrecioVenta:parseFloat(g("p-pvt").value)||0,
+      StockActual:parseInt(g("p-stk").value)||0,StockMinimo:parseInt(g("p-min").value)||3,
+      ImagenURL:img,Activo:true
+    };
     if(idx!==""){
       const p=prods[+idx];
-      const raw=[...p._raw];
-      vals.forEach((v,i)=>{if(i<raw.length)raw[i]=v;});
+      // Actualizar usando headers reales del Excel
+      const raw=toRaw(p,realHeaders.P,newVals);
       await updRaw(TBL.P,p._i,raw);
     }else{
+      // Nuevo producto — construir array según headers reales del Excel
+      const hdrs=realHeaders.P.length?realHeaders.P:CP;
+      const vals=hdrs.map(h=>newVals.hasOwnProperty(h)?newVals[h]:"");
       await addRow(TBL.P,vals);
       if(parseInt(g("p-stk").value)>0){
         await addRow(TBL.M,[Date.now()+"",sku,nom,"Entrada",parseInt(g("p-stk").value),
@@ -1163,7 +1210,7 @@ async function saveProd(){
       }
     }
     closeM("m-prod");await refreshData();
-  }catch(e){hideLo();alert("Error: "+e.message)}
+  }catch(e){hideLo();alert("Error al guardar producto:\n"+e.message)}
 }
 
 // ╔═══════════════════════════════════════════════╗
