@@ -144,8 +144,9 @@ table.t tbody tr:last-child{border-bottom:none}
       Iniciar sesión con Microsoft 365
     </button>
     <p class="lnote">Usa tus credenciales de Office 365</p>
-  </div>
-</div>
+    <button onclick="limpiarSesionMSAL();location.reload()" style="margin-top:14px;background:none;border:none;color:var(--mink);font-size:12px;cursor:pointer;text-decoration:underline;width:100%;padding:4px">
+      ¿Problemas para ingresar? Limpiar sesión y recargar
+    </button>
 
 <!-- APP -->
 <div id="app" style="display:none;">
@@ -484,37 +485,113 @@ const CFG_OK=!CFG.clientId.includes("TU_");
 const SCOPES=["Files.ReadWrite","Files.ReadWrite.All","Sites.ReadWrite.All","User.Read"];
 let msalApp=null,msalReady=false,me=null,token=null;
 let prods=[],movs=[],clis=[],vtas=[],dtls=[],charts_={},cart=[];
-let csvRows=[];  // para carga masiva
+let csvRows=[];
 
-async function getMsal(){
-  if(msalReady)return msalApp;
-  const cfg={auth:{clientId:CFG.clientId,authority:`https://login.microsoftonline.com/${CFG.tenantId}`,redirectUri:window.location.origin+window.location.pathname},cache:{cacheLocation:"sessionStorage"}};
-  const Lib=window.msal||window.msalBrowser;
-  if(!Lib)throw new Error("Librería MSAL no disponible");
-  msalApp=new Lib.PublicClientApplication(cfg);
-  await msalApp.initialize();msalReady=true;return msalApp;
+function limpiarSesionMSAL(){
+  // Limpia entradas corruptas de sessionStorage/localStorage de MSAL
+  try{
+    Object.keys(sessionStorage).filter(k=>k.startsWith("msal.")||k.startsWith("msal-")).forEach(k=>sessionStorage.removeItem(k));
+    Object.keys(localStorage).filter(k=>k.startsWith("msal.")||k.startsWith("msal-")).forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
 }
+
+async function getMsal(forzarNuevo=false){
+  if(msalReady&&!forzarNuevo)return msalApp;
+  const cfg={
+    auth:{
+      clientId:CFG.clientId,
+      authority:`https://login.microsoftonline.com/${CFG.tenantId}`,
+      redirectUri:window.location.origin+window.location.pathname
+    },
+    cache:{cacheLocation:"sessionStorage",storeAuthStateInCookie:true}
+  };
+  const Lib=window.msal||window.msalBrowser;
+  if(!Lib)throw new Error("Librería MSAL no disponible. Revisa tu conexión a internet.");
+  msalApp=new Lib.PublicClientApplication(cfg);
+  await msalApp.initialize();
+  msalReady=true;
+  return msalApp;
+}
+
 async function initApp(){
   if(!CFG_OK){el("cfg-warn").style.display="block";return}
   showLo("Iniciando...");
-  try{const app=await getMsal();await app.handleRedirectPromise();const acc=app.getAllAccounts();
-    if(acc.length>0){me=acc[0];await getToken();await bootApp()}else hideLo();}
-  catch(e){hideLo();showErr("Error: "+e.message)}
+  try{
+    const app=await getMsal();
+    await app.handleRedirectPromise().catch(()=>{});
+    const acc=app.getAllAccounts();
+    if(acc.length>0){
+      me=acc[0];
+      try{await getToken();await bootApp();}
+      catch(e){
+        // Token expirado o inválido — limpiar y pedir login nuevo
+        console.warn("Token inválido, limpiando sesión:",e.message);
+        limpiarSesionMSAL();
+        msalReady=false;msalApp=null;
+        hideLo();
+      }
+    }else{
+      hideLo();
+    }
+  }catch(e){
+    hideLo();
+    showErr("Error al iniciar: "+e.message);
+  }
 }
+
 async function signIn(){
   if(!CFG_OK){el("cfg-warn").style.display="block";return}
   el("login-err").style.display="none";
-  try{showLo("Conectando...");const app=await getMsal();const r=await app.loginPopup({scopes:SCOPES});me=r.account;token=r.accessToken;await bootApp();}
-  catch(e){hideLo();showErr("Error: "+e.message)}
+  try{
+    showLo("Conectando con Microsoft...");
+    let app;
+    try{app=await getMsal();}
+    catch(e){
+      // Si falla, limpiar sesión y reintentar
+      limpiarSesionMSAL();msalReady=false;msalApp=null;
+      app=await getMsal(true);
+    }
+    const r=await app.loginPopup({scopes:SCOPES,prompt:"select_account"});
+    me=r.account;token=r.accessToken;
+    await bootApp();
+  }catch(e){
+    hideLo();
+    const msg=e.message||"";
+    if(msg.includes("popup_window_error")||msg.includes("popupBlocked")){
+      showErr("El navegador bloqueó el popup. Permite popups para esta página e intenta de nuevo.");
+    }else if(msg.includes("user_cancelled")){
+      showErr("Inicio de sesión cancelado.");
+    }else{
+      showErr("Error: "+msg);
+    }
+  }
 }
+
 async function getToken(){
-  try{const app=await getMsal();const r=await app.acquireTokenSilent({account:me,scopes:SCOPES});token=r.accessToken}
-  catch{const app=await getMsal();const r=await app.acquireTokenPopup({account:me,scopes:SCOPES});token=r.accessToken}
+  try{
+    const app=await getMsal();
+    const r=await app.acquireTokenSilent({account:me,scopes:SCOPES});
+    token=r.accessToken;
+  }catch{
+    const app=await getMsal();
+    const r=await app.acquireTokenPopup({account:me,scopes:SCOPES});
+    token=r.accessToken;
+  }
 }
-function signOut(){if(msalApp)msalApp.logoutPopup();el("app").style.display="none";el("login-screen").style.display="flex"}
+
+function signOut(){
+  try{if(msalApp)msalApp.logoutPopup();}catch(e){}
+  limpiarSesionMSAL();
+  msalReady=false;msalApp=null;me=null;token=null;
+  el("app").style.display="none";
+  el("login-screen").style.display="flex";
+  el("login-err").style.display="none";
+}
+
 async function bootApp(){
   el("login-screen").style.display="none";el("app").style.display="flex";
-  const name=me.name||me.username;el("uname").textContent=name;el("uavatar").textContent=(name[0]||"U").toUpperCase();
+  const name=me.name||me.username;
+  el("uname").textContent=name;el("uavatar").textContent=(name[0]||"U").toUpperCase();
   el("v-vendedor").value=name;
   el("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
   await refreshData();hideLo();
@@ -698,16 +775,32 @@ async function confirmarVenta(){
       await updStock(p,nuevoStock);  // usa valores originales del Excel
     }
 
-    // 4. Auto-guardar cliente
+    // 4. Auto-guardar cliente SIEMPRE (con nombre manual o con NIT)
     showLo("Guardando cliente (4/4)...");
     try{
-      const cliExiste=clis.findIndex(c=>String(c.NIT).toUpperCase()===nit.toUpperCase());
-      if(cliExiste<0&&nit) await addRow(TBL.cli,[nit,nombre,tel,dir,1]);
-      else if(cliExiste>=0){
+      // Buscar por NIT exacto, o por nombre si el NIT es CF
+      const buscarClave = nit !== "CF" ? nit : nombre;
+      const cliExiste = nit !== "CF"
+        ? clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase())
+        : clis.findIndex(c=>String(c.Nombre||"").toUpperCase()===nombre.toUpperCase());
+
+      if(cliExiste < 0){
+        // Cliente nuevo — siempre guardar, incluso si solo hay nombre
+        await addRow(TBL.cli,[nit,nombre,tel,dir,1]);
+      } else {
+        // Cliente existente — actualizar datos y sumar venta
         const c=clis[cliExiste];
-        await updRow(TBL.cli,c._i,[c.NIT,c.Nombre,c.Telefono||tel,c.Direccion||dir,(+c.TotalVentas||0)+1]);
+        const cRaw=[...c._raw];
+        // Actualizar campos si vinieron vacíos antes
+        cRaw[2]=cRaw[2]||tel;   // Telefono
+        cRaw[3]=cRaw[3]||dir;   // Direccion
+        cRaw[4]=(+(cRaw[4])||0)+1; // TotalVentas +1
+        await updRow(TBL.cli,c._i,cRaw);
       }
-    }catch(e){console.warn("Cliente no crítico:",e.message)}
+    }catch(e){
+      // Si falla la tabla Clientes, intentar loguear pero no interrumpir
+      console.warn("Aviso cliente:",e.message);
+    }
 
     // Capturar datos para recibo ANTES de limpiar
     const itemsSnapshot=[...cart];
