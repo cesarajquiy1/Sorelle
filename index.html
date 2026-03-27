@@ -8,23 +8,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-:root {
-  --ink:#111118; --bone:#f5f0e8; --rose:#c8506a; --rose-lt:#f2d5db;
-  --mink:#8c7b72; --warm:#e8dfd4; --surface:#faf8f5; --card:#fff;
-  --border:#e4ddd4; --green:#3db88a; --orange:#e0923b; --purple:#7c6cd1;
-  --font-d:'Cormorant Garamond',Georgia,serif; --font-b:'DM Sans',system-ui,sans-serif;
-  --sw:224px; --r:14px; --sh:0 2px 18px rgba(17,17,24,0.07);
-}
+:root{--ink:#111118;--bone:#f5f0e8;--rose:#c8506a;--rose-lt:#f2d5db;--mink:#8c7b72;--warm:#e8dfd4;--surface:#faf8f5;--card:#fff;--border:#e4ddd4;--green:#3db88a;--orange:#e0923b;--purple:#7c6cd1;--font-d:'Cormorant Garamond',Georgia,serif;--font-b:'DM Sans',system-ui,sans-serif;--sw:224px;--r:14px;--sh:0 2px 18px rgba(17,17,24,0.07)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-b);background:var(--surface);color:var(--ink);font-size:14px}
-
-/* LOADING */
 #lo{position:fixed;inset:0;background:rgba(17,17,24,.55);backdrop-filter:blur(4px);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 .spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.25);border-top-color:var(--rose);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 #lo-msg{color:rgba(255,255,255,.8);font-size:13px;font-weight:500}
-
-/* LOGIN */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);background-image:radial-gradient(ellipse at 20% 50%,#2d1a20 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#1a1520 0%,transparent 50%)}
 .lcard{background:var(--card);border-radius:24px;padding:52px 44px;max-width:400px;width:92%;box-shadow:0 40px 80px rgba(0,0,0,.4);animation:fadeUp .5s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
@@ -33,46 +23,35 @@ body{font-family:var(--font-b);background:var(--surface);color:var(--ink);font-s
 .btn-ms{width:100%;padding:14px 20px;background:var(--rose);color:#fff;border:none;border-radius:12px;font-family:var(--font-b);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s}
 .btn-ms:hover{background:#b54460;transform:translateY(-1px);box-shadow:0 8px 24px rgba(200,80,106,.35)}
 .lnote{color:var(--mink);font-size:12px;text-align:center;margin-top:16px}
-
-/* SIDEBAR */
 #sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:var(--ink);color:#fff;z-index:100;display:flex;flex-direction:column;overflow:hidden}
 .sb-brand{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.07)}
 .sb-name{font-family:var(--font-d);font-size:1.9rem;font-weight:700;color:var(--rose);letter-spacing:.5px}
 .sb-sub{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px}
 .sb-nav{padding:16px 12px;flex:1;overflow-y:auto}
-.sb-section{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.25);padding:8px 12px 4px;font-weight:600}
+.sb-sec{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.25);padding:8px 12px 4px;font-weight:600}
 .ni{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.5);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
 .ni:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
 .ni.active{color:#fff;background:rgba(200,80,106,.25)}
-.ni.active i{color:var(--rose)}
+.ni.active i,.ni:hover i{color:var(--rose)}
 .ni i{font-size:15px;width:18px}
-.sb-bottom{padding:16px 12px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-bot{padding:16px 12px;border-top:1px solid rgba(255,255,255,.07)}
 .ubadge{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px}
-.uavatar{width:30px;height:30px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.uav{width:30px;height:30px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .uname{font-size:12px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btn-so{width:100%;padding:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
 .btn-so:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
-
-/* MAIN */
 #main{margin-left:var(--sw);padding:32px;min-height:100vh}
-.page{display:none}
-.page.active{display:block;animation:fadeIn .2s ease}
+.page{display:none}.page.active{display:block;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
-/* PAGE HEADER */
-.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:gap}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}
 .pt{font-family:var(--font-d);font-size:2rem;font-weight:600;color:var(--ink);letter-spacing:-.3px}
 .pt small{font-family:var(--font-b);font-size:13px;font-weight:400;color:var(--mink);margin-left:8px}
-.ph-actions{display:flex;gap:10px;align-items:center}
-
-/* BUTTONS */
 .bp{padding:10px 20px;background:var(--rose);color:#fff;border:none;border-radius:10px;font-family:var(--font-b);font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s;white-space:nowrap}
 .bp:hover{background:#b54460;transform:translateY(-1px);box-shadow:0 4px 16px rgba(200,80,106,.3)}
 .bp.green{background:var(--green)}.bp.green:hover{background:#2da070;box-shadow:0 4px 16px rgba(61,184,138,.3)}
+.bp.blue{background:#4a7fc1}.bp.blue:hover{background:#3a6fa8}
 .bg{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font-b);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;color:var(--ink);font-weight:500}
 .bg:hover{background:var(--warm);border-color:var(--mink)}
-
-/* KPI */
 .kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
 .kcard{background:var(--card);border-radius:var(--r);padding:22px 20px;border:1px solid var(--border);box-shadow:var(--sh);position:relative;overflow:hidden}
 .kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
@@ -83,12 +62,8 @@ body{font-family:var(--font-b);background:var(--surface);color:var(--ink);font-s
 .klabel{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mink);font-weight:600;margin-bottom:8px}
 .kval{font-family:var(--font-d);font-size:2.2rem;font-weight:700;color:var(--ink);line-height:1}
 .ksub{font-size:11px;color:var(--mink);margin-top:4px}
-
-/* CARD */
 .card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);overflow:hidden}
 .card-h{padding:18px 22px 14px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between}
-
-/* TABLE */
 .tw{overflow-x:auto}
 table.t{width:100%;border-collapse:collapse;font-size:13px}
 table.t thead th{background:var(--bone);padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--mink);font-weight:600;white-space:nowrap}
@@ -96,16 +71,12 @@ table.t tbody tr{border-bottom:1px solid var(--border);transition:background .1s
 table.t tbody tr:hover{background:var(--surface)}
 table.t tbody td{padding:11px 14px;vertical-align:middle}
 table.t tbody tr:last-child{border-bottom:none}
-
-/* BADGES */
 .b{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
 .b-e{background:#d4edda;color:#1a7a3a}.b-s{background:#fce4e8;color:#a02040}
-.b-ap{background:#d4edda;color:#1a7a3a}.b-an{background:#fce4e8;color:#a02040}
-.b-d{background:#e8e0f5;color:#5b3b8a}.b-cat{background:var(--rose-lt);color:var(--rose)}
+.b-cat{background:var(--rose-lt);color:var(--rose)}
 .b-warn{background:#fff3cd;color:#856404}.b-green{background:#d4edda;color:#1a7a3a}
 .b-blue{background:#d0e8ff;color:#1a4a8a}.b-gray{background:#eee;color:#555}
-
-/* FORMS */
+.b-d{background:#e8e0f5;color:#5b3b8a}
 .fg{margin-bottom:16px}
 .fl{font-size:12px;font-weight:600;color:var(--mink);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:6px}
 .fc{width:100%;padding:10px 13px;background:var(--surface);border:1.5px solid var(--border);border-radius:9px;font-family:var(--font-b);font-size:13.5px;color:var(--ink);outline:none;transition:border-color .15s}
@@ -113,77 +84,52 @@ table.t tbody tr:last-child{border-bottom:none}
 .fc::placeholder{color:#bbb}
 .fr{display:grid;gap:14px}
 .c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}.c4{grid-template-columns:1fr 1fr 1fr 1fr}
-
-/* MODAL */
 .mo{position:fixed;inset:0;background:rgba(17,17,24,.5);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
 .mb{background:var(--card);border-radius:20px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,.3);animation:fadeUp .2s ease}
-.msm{max-width:500px}.mmd{max-width:640px}.mlg{max-width:860px}
+.msm{max-width:500px}.mmd{max-width:660px}.mlg{max-width:880px}
 .mh{padding:24px 28px 0;display:flex;align-items:center;justify-content:space-between}
-.mt{font-family:var(--font-d);font-size:1.6rem;font-weight:600}
+.mt2{font-family:var(--font-d);font-size:1.6rem;font-weight:600}
 .mc{padding:20px 28px}
 .mf{padding:16px 28px 24px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border);margin-top:8px}
 .bx{background:none;border:none;cursor:pointer;color:var(--mink);font-size:20px;transition:color .15s;padding:4px}
 .bx:hover{color:var(--ink)}
-
-/* FILTERS */
 .frow{display:flex;gap:10px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
 .fg2{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
-
-/* CART */
 .cart-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .cart-item:last-child{border-bottom:none}
 .cart-del{background:none;border:none;cursor:pointer;color:#c8506a;font-size:16px;padding:4px}
-.cart-info{flex:1}
-.cart-name{font-weight:600;font-size:13px}
-.cart-sub{font-size:12px;color:var(--mink)}
+.cart-info{flex:1}.cart-name{font-weight:600;font-size:13px}.cart-sub{font-size:12px;color:var(--mink)}
 .cart-total{font-weight:700;font-size:14px;white-space:nowrap}
-.cart-qty{width:60px;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;text-align:center}
+.cart-qty{width:60px;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;text-align:center;font-family:var(--font-b)}
 .cart-empty{padding:32px;text-align:center;color:var(--mink);font-size:13px}
-
-/* SALE TOTALS */
 .total-box{background:var(--bone);border-radius:12px;padding:18px 20px;margin-top:16px}
 .total-row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
 .total-row.grand{font-weight:700;font-size:1.1rem;border-top:1px solid var(--border);margin-top:8px;padding-top:12px}
-
-/* INFO BOX */
 .ibox{background:#f0f7ff;border:1px solid #c8dfff;border-radius:10px;padding:12px 14px;font-size:13px;color:#1a4a8a;margin-bottom:14px}
-.wbox{background:#fff8e6;border:1px solid #f0d080;border-radius:10px;padding:12px 14px;font-size:13px;color:#7a5a00;margin-bottom:14px}
-
-/* EMPTY */
 .empty{padding:48px;text-align:center;color:var(--mink)}
 .empty i{font-size:40px;opacity:.3;display:block;margin-bottom:12px}
-
-/* CHARTS */
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .cc{background:var(--card);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);padding:22px}
 .ct{font-weight:600;font-size:14px;margin-bottom:18px;color:var(--ink)}
-
-/* DASH GRID */
 .dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
-
-/* STOCK */
 .stock-low{color:var(--rose);font-weight:700}
-
-/* PRINT STYLES */
-@media print {
-  body *{visibility:hidden}
-  #receipt,#receipt *{visibility:visible}
-  #receipt{position:fixed;inset:0;background:#fff;padding:32px}
-}
-
-@media(max-width:900px){
-  :root{--sw:0px}
-  #sidebar{transform:translateX(-224px)}
-  #main{margin-left:0;padding:20px}
-  .kgrid{grid-template-columns:1fr 1fr}
-  .cgrid{grid-template-columns:1fr}
-  .dash-grid{grid-template-columns:1fr}
-}
+/* Imagen producto */
+.prod-img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border)}
+.prod-img-ph{width:40px;height:40px;border-radius:8px;background:var(--bone);display:flex;align-items:center;justify-content:center;color:var(--mink);font-size:18px;border:1px solid var(--border)}
+/* Upload área */
+.upload-area{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.upload-area:hover{border-color:var(--rose);background:var(--rose-lt)}
+.upload-area input{display:none}
+/* CSV drop */
+.csv-area{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .15s}
+.csv-area:hover,.csv-area.drag{border-color:var(--rose);background:var(--rose-lt)}
+.csv-area input{display:none}
+@media print{body *{visibility:hidden}#receipt,#receipt *{visibility:visible}#receipt{position:fixed;inset:0;background:#fff;padding:32px}}
+@media(max-width:900px){:root{--sw:0px}#sidebar{transform:translateX(-224px)}#main{margin-left:0;padding:20px}.kgrid{grid-template-columns:1fr 1fr}.cgrid{grid-template-columns:1fr}.dash-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="lo"><div class="spin"></div><div id="lo-msg">Iniciando...</div></div>
 
 <!-- LOGIN -->
@@ -191,10 +137,8 @@ table.t tbody tr:last-child{border-bottom:none}
   <div class="lcard">
     <div class="lbrand">Sorelle</div>
     <div class="lsub">Sistema de Gestión · Calzado</div>
-    <div id="cfg-warn" style="display:none;background:#fff3cd;border:1px solid #f0c040;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7a5a00;line-height:1.6;">
-      <b>⚙️ Configuración pendiente</b><br>Edita las variables <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px">clientId</code>, <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px">tenantId</code> y <code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px">fileId</code> en el archivo HTML.
-    </div>
-    <div id="login-err" style="display:none;background:#fce4e8;border:1px solid #e8a0b0;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#8a1a30;"></div>
+    <div id="cfg-warn" style="display:none;background:#fff3cd;border:1px solid #f0c040;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7a5a00;line-height:1.6"><b>⚙️ Configuración pendiente</b><br>Edita clientId, tenantId y fileId en el HTML.</div>
+    <div id="login-err" style="display:none;background:#fce4e8;border:1px solid #e8a0b0;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#8a1a30"></div>
     <button class="btn-ms" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 23 23" fill="none"><path d="M1 1h10v10H1V1zm11 0h10v10H12V1zM1 12h10v10H1V12zm11 0h10v10H12V12z" fill="white" fill-opacity=".9"/></svg>
       Iniciar sesión con Microsoft 365
@@ -208,20 +152,20 @@ table.t tbody tr:last-child{border-bottom:none}
   <nav id="sidebar">
     <div class="sb-brand"><div class="sb-name">Sorelle</div><div class="sb-sub">Sistema ERP</div></div>
     <div class="sb-nav">
-      <div class="sb-section">Principal</div>
+      <div class="sb-sec">Principal</div>
       <button class="ni active" onclick="goPage('dashboard',this)"><i class="bi bi-grid-1x2"></i>Dashboard</button>
-      <div class="sb-section">Ventas</div>
+      <div class="sb-sec">Ventas</div>
       <button class="ni" onclick="goPage('ventas',this)"><i class="bi bi-receipt"></i>Nueva Venta</button>
       <button class="ni" onclick="goPage('historial',this)"><i class="bi bi-clock-history"></i>Historial</button>
       <button class="ni" onclick="goPage('clientes',this)"><i class="bi bi-people"></i>Clientes</button>
-      <div class="sb-section">Inventario</div>
+      <div class="sb-sec">Inventario</div>
       <button class="ni" onclick="goPage('productos',this)"><i class="bi bi-box-seam"></i>Productos</button>
       <button class="ni" onclick="goPage('movimientos',this)"><i class="bi bi-arrow-left-right"></i>Movimientos</button>
-      <div class="sb-section">Análisis</div>
+      <div class="sb-sec">Análisis</div>
       <button class="ni" onclick="goPage('reportes',this)"><i class="bi bi-bar-chart-line"></i>Reportes</button>
     </div>
-    <div class="sb-bottom">
-      <div class="ubadge"><div class="uavatar" id="uavatar">?</div><div class="uname" id="uname">...</div></div>
+    <div class="sb-bot">
+      <div class="ubadge"><div class="uav" id="uavatar">?</div><div class="uname" id="uname">...</div></div>
       <button class="btn-so" onclick="signOut()"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
     </div>
   </nav>
@@ -231,11 +175,10 @@ table.t tbody tr:last-child{border-bottom:none}
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
       <div class="ph"><div class="pt">Dashboard <small id="dash-fecha"></small></div>
-        <button class="bg" onclick="refreshData()"><i class="bi bi-arrow-clockwise"></i>Actualizar</button>
-      </div>
+        <button class="bg" onclick="refreshData()"><i class="bi bi-arrow-clockwise"></i>Actualizar</button></div>
       <div class="kgrid">
         <div class="kcard c1"><div class="klabel">Ventas Hoy</div><div class="kval" id="kpi-vtahoy">—</div><div class="ksub" id="kpi-vtahoy-s">—</div></div>
-        <div class="kcard c2"><div class="klabel">Ingresos del Mes</div><div class="kval" id="kpi-ingmes">—</div><div class="ksub">ventas del mes</div></div>
+        <div class="kcard c2"><div class="klabel">Ingresos del Mes</div><div class="kval" id="kpi-ingmes">—</div><div class="ksub">periodo actual</div></div>
         <div class="kcard c3"><div class="klabel">Productos Activos</div><div class="kval" id="kpi-prods">—</div><div class="ksub" id="kpi-prods-s">—</div></div>
         <div class="kcard c4"><div class="klabel">Stock Bajo ⚠️</div><div class="kval" id="kpi-bajo">—</div><div class="ksub">productos críticos</div></div>
       </div>
@@ -249,20 +192,12 @@ table.t tbody tr:last-child{border-bottom:none}
     <div id="page-ventas" class="page">
       <div class="ph"><div class="pt">Nueva Venta</div></div>
       <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;">
-        <!-- Panel izquierdo: datos + productos -->
         <div>
-          <!-- Datos del cliente -->
-          <div class="card" style="margin-bottom:16px;">
+          <div class="card" style="margin-bottom:16px">
             <div class="card-h"><span><i class="bi bi-person"></i> Datos del Cliente</span></div>
             <div style="padding:20px">
               <div class="fr c2">
-                <div class="fg">
-                  <label class="fl">NIT / CF</label>
-                  <div style="display:flex;gap:8px">
-                    <input class="fc" id="v-nit" placeholder="Ej: 1234567-8 o CF" style="flex:1" oninput="buscarCliente()">
-                    <button class="bg" onclick="openModalCliente()" title="Nuevo cliente"><i class="bi bi-person-plus"></i></button>
-                  </div>
-                </div>
+                <div class="fg"><label class="fl">NIT / CF</label><input class="fc" id="v-nit" placeholder="Ej: 1234567-8 o CF" oninput="buscarCliente()"></div>
                 <div class="fg"><label class="fl">Nombre Cliente *</label><input class="fc" id="v-nombre" placeholder="Nombre completo"></div>
               </div>
               <div class="fr c2">
@@ -272,49 +207,29 @@ table.t tbody tr:last-child{border-bottom:none}
               <div class="fr c3">
                 <div class="fg"><label class="fl">Vendedor *</label><input class="fc" id="v-vendedor" placeholder="Nombre del vendedor"></div>
                 <div class="fg"><label class="fl">Tipo de Envío</label>
-                  <select class="fc" id="v-envio">
-                    <option value="Tienda">Tienda (pickup)</option>
-                    <option value="Moto">Moto</option>
-                    <option value="Cargo Expresso">Cargo Expresso</option>
-                  </select>
-                </div>
+                  <select class="fc" id="v-envio"><option value="Tienda">Tienda (pickup)</option><option value="Moto">Moto</option><option value="Cargo Expresso">Cargo Expresso</option></select></div>
                 <div class="fg"><label class="fl">Método de Pago</label>
-                  <select class="fc" id="v-pago">
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Mixto">Mixto (ambos)</option>
-                  </select>
-                </div>
+                  <select class="fc" id="v-pago"><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option><option value="Mixto">Mixto</option></select></div>
               </div>
             </div>
           </div>
-
-          <!-- Agregar productos -->
           <div class="card">
             <div class="card-h"><span><i class="bi bi-plus-circle"></i> Agregar Producto</span></div>
             <div style="padding:20px">
-              <div class="fr c2" style="margin-bottom:12px;">
-                <div class="fg" style="margin:0">
-                  <label class="fl">Producto</label>
-                  <select class="fc" id="v-prod" onchange="onVProdChange()"><option value="">Seleccionar...</option></select>
-                </div>
-                <div class="fg" style="margin:0">
-                  <label class="fl">Cantidad</label>
-                  <input type="number" class="fc" id="v-cant" value="1" min="1">
-                </div>
+              <div class="fr c2" style="margin-bottom:12px">
+                <div class="fg" style="margin:0"><label class="fl">Producto</label>
+                  <select class="fc" id="v-prod" onchange="onVProdChange()"><option value="">Seleccionar...</option></select></div>
+                <div class="fg" style="margin:0"><label class="fl">Cantidad</label>
+                  <input type="number" class="fc" id="v-cant" value="1" min="1"></div>
               </div>
-              <div id="v-prod-info" style="display:none;" class="ibox"></div>
-              <button class="bp" onclick="addToCart()" style="width:100%;justify-content:center"><i class="bi bi-cart-plus"></i> Agregar al carrito</button>
+              <div id="v-prod-info" style="display:none" class="ibox"></div>
+              <button class="bp" onclick="addToCart()" style="width:100%;justify-content:center"><i class="bi bi-cart-plus"></i>Agregar al carrito</button>
             </div>
           </div>
         </div>
-
-        <!-- Panel derecho: carrito + totales -->
         <div>
-          <div class="card" style="margin-bottom:16px;position:sticky;top:20px;">
-            <div class="card-h"><span><i class="bi bi-cart3"></i> Carrito</span>
-              <span id="cart-count" class="b b-cat">0 items</span>
-            </div>
+          <div class="card" style="position:sticky;top:20px">
+            <div class="card-h"><span><i class="bi bi-cart3"></i> Carrito</span><span id="cart-count" class="b b-cat">0 items</span></div>
             <div style="padding:0 20px" id="cart-items"><div class="cart-empty">Sin productos aún</div></div>
             <div style="padding:0 20px 20px">
               <div class="total-box">
@@ -323,30 +238,25 @@ table.t tbody tr:last-child{border-bottom:none}
                 <div class="total-row grand"><span>TOTAL</span><span id="t-total">Q 0.00</span></div>
               </div>
               <div class="fg" style="margin-top:12px"><label class="fl">Costo de Envío (Q)</label>
-                <input type="number" class="fc" id="v-cenv" value="0" min="0" step="0.50" oninput="calcTotales()">
-              </div>
+                <input type="number" class="fc" id="v-cenv" value="0" min="0" step="0.50" oninput="calcTotales()"></div>
               <div class="fg"><label class="fl">Notas de la Venta</label>
-                <input class="fc" id="v-notas" placeholder="Instrucciones especiales...">
-              </div>
+                <input class="fc" id="v-notas" placeholder="Instrucciones especiales..."></div>
               <button class="bp green" onclick="confirmarVenta()" style="width:100%;justify-content:center;padding:14px">
-                <i class="bi bi-check-circle"></i> Confirmar Venta
-              </button>
+                <i class="bi bi-check-circle"></i>Confirmar Venta</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- HISTORIAL DE VENTAS -->
+    <!-- HISTORIAL -->
     <div id="page-historial" class="page">
       <div class="ph"><div class="pt">Historial de Ventas</div></div>
       <div class="card">
         <div class="frow">
           <div class="fg2"><input type="date" class="fc" id="hfi" onchange="renderHistorial()"></div>
           <div class="fg2"><input type="date" class="fc" id="hff" onchange="renderHistorial()"></div>
-          <div class="fg2"><select class="fc" id="hpago" onchange="renderHistorial()">
-            <option value="">Todos los pagos</option><option>Efectivo</option><option>Transferencia</option><option>Mixto</option>
-          </select></div>
+          <div class="fg2"><select class="fc" id="hpago" onchange="renderHistorial()"><option value="">Todos los pagos</option><option>Efectivo</option><option>Transferencia</option><option>Mixto</option></select></div>
           <div class="fg2"><input class="fc" id="hvend" placeholder="Filtrar vendedor..." oninput="renderHistorial()"></div>
         </div>
         <div class="tw"><table class="t">
@@ -358,13 +268,11 @@ table.t tbody tr:last-child{border-bottom:none}
 
     <!-- CLIENTES -->
     <div id="page-clientes" class="page">
-      <div class="ph"><div class="pt">Clientes</div>
-        <button class="bp" onclick="openModalCliente()"><i class="bi bi-plus-lg"></i>Nuevo Cliente</button>
-      </div>
+      <div class="ph"><div class="pt">Clientes</div></div>
       <div class="card">
-        <div class="frow"><input class="fc" id="busq-cli" placeholder="🔍 Buscar NIT o nombre..." oninput="renderClientes()"></div>
+        <div class="frow"><input class="fc" id="busq-cli" placeholder="🔍 Buscar NIT o nombre..." oninput="renderClientes()" style="flex:1"></div>
         <div class="tw"><table class="t">
-          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Ventas</th><th></th></tr></thead>
+          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Ventas</th></tr></thead>
           <tbody id="tbody-cli"></tbody>
         </table></div>
       </div>
@@ -372,8 +280,12 @@ table.t tbody tr:last-child{border-bottom:none}
 
     <!-- PRODUCTOS -->
     <div id="page-productos" class="page">
-      <div class="ph"><div class="pt">Productos</div>
-        <button class="bp" onclick="openModalProd()"><i class="bi bi-plus-lg"></i>Nuevo Producto</button>
+      <div class="ph">
+        <div class="pt">Productos</div>
+        <div style="display:flex;gap:10px">
+          <button class="bp blue" onclick="openModalCSV()"><i class="bi bi-file-earmark-arrow-up"></i>Carga Masiva CSV</button>
+          <button class="bp" onclick="openModalProd()"><i class="bi bi-plus-lg"></i>Nuevo Producto</button>
+        </div>
       </div>
       <div class="card">
         <div class="frow">
@@ -382,7 +294,7 @@ table.t tbody tr:last-child{border-bottom:none}
           <div class="fg2"><select class="fc" id="fil-talla" onchange="renderProductos()"><option value="">Todas las tallas</option></select></div>
         </div>
         <div class="tw"><table class="t">
-          <thead><tr><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Proveedor</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>Stock</th><th>Ubicación</th><th></th></tr></thead>
+          <thead><tr><th>Img</th><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Color</th><th>Medidas</th><th>Costo</th><th>P.Venta</th><th>Margen</th><th>Stock</th><th>Ubicación</th><th></th></tr></thead>
           <tbody id="tbody-prod"></tbody>
         </table></div>
       </div>
@@ -395,9 +307,7 @@ table.t tbody tr:last-child{border-bottom:none}
         <div class="frow">
           <div class="fg2"><input type="date" class="fc" id="mfi" onchange="renderMov()"></div>
           <div class="fg2"><input type="date" class="fc" id="mff" onchange="renderMov()"></div>
-          <div class="fg2"><select class="fc" id="mtipo" onchange="renderMov()">
-            <option value="">Todos</option><option>Entrada</option><option>Salida</option><option>Ajuste Positivo</option><option>Ajuste Negativo</option>
-          </select></div>
+          <div class="fg2"><select class="fc" id="mtipo" onchange="renderMov()"><option value="">Todos</option><option>Entrada</option><option>Salida</option></select></div>
         </div>
         <div class="tw"><table class="t">
           <thead><tr><th>Fecha</th><th>Producto</th><th>SKU</th><th>Tipo</th><th>Cant.</th><th>Vendedor</th><th>Precio Unit.</th><th>Total</th><th>Ref. Venta</th></tr></thead>
@@ -410,9 +320,7 @@ table.t tbody tr:last-child{border-bottom:none}
     <div id="page-reportes" class="page">
       <div class="ph"><div class="pt">Reportes</div>
         <select class="fc" id="rep-per" onchange="renderReportes()" style="width:200px">
-          <option value="7">Últimos 7 días</option>
-          <option value="30" selected>Últimos 30 días</option>
-          <option value="90">Últimos 90 días</option>
+          <option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option>
         </select>
       </div>
       <div class="kgrid" style="margin-bottom:20px">
@@ -432,25 +340,38 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
-<!-- MODAL NUEVO PRODUCTO -->
+<!-- MODAL PRODUCTO -->
 <div id="modal-prod" class="mo" style="display:none" onclick="bgClose(event,'modal-prod')">
   <div class="mb mmd">
-    <div class="mh"><div class="mt" id="mprod-title">Nuevo Producto</div><button class="bx" onclick="closeM('modal-prod')"><i class="bi bi-x-lg"></i></button></div>
+    <div class="mh"><div class="mt2" id="mprod-title">Nuevo Producto</div><button class="bx" onclick="closeM('modal-prod')"><i class="bi bi-x-lg"></i></button></div>
     <div class="mc">
       <input type="hidden" id="p-idx">
-      <div class="fr c2"><div class="fg"><label class="fl">SKU *</label><input class="fc" id="p-sku" placeholder="Ej: ZAP-CAS-36-001"></div>
-        <div class="fg"><label class="fl">Nombre *</label><input class="fc" id="p-nombre" placeholder="Nombre del producto"></div></div>
+      <div class="fr c2">
+        <div class="fg"><label class="fl">SKU *</label><input class="fc" id="p-sku" placeholder="Ej: SAN-NUDE-36"></div>
+        <div class="fg"><label class="fl">Nombre *</label><input class="fc" id="p-nombre" placeholder="Nombre del producto"></div>
+      </div>
       <div class="fr c3">
-        <div class="fg"><label class="fl">Categoría</label><select class="fc" id="p-cat">
-          <option>Casual</option><option>Deportivo</option><option>Formal</option><option>Sandalia</option>
-          <option>Bota</option><option>Tacon Alto</option><option>Plataforma</option><option>Balerina</option><option>Mocasin</option><option>Oxford</option>
-        </select></div>
-        <div class="fg"><label class="fl">Talla</label><select class="fc" id="p-talla">
-          <option>33</option><option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option><option>41</option><option>42</option>
-        </select></div>
-        <div class="fg"><label class="fl">Ubicación</label><select class="fc" id="p-ubic">
-          <option>Bodega Principal</option><option>Tienda</option><option>Consignacion</option><option>Transito</option>
-        </select></div>
+        <div class="fg"><label class="fl">Categoría</label>
+          <select class="fc" id="p-cat">
+            <option>Sandalias</option><option>Plataformas</option><option>Tacones</option><option>Tenis</option><option>Otros</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Talla</label>
+          <select class="fc" id="p-talla">
+            <option>34</option><option>35</option><option>36</option><option>37</option><option>38</option><option>39</option><option>40</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Ubicación</label>
+          <select class="fc" id="p-ubic"><option>Bodega Principal</option><option>Tienda</option><option>Consignacion</option><option>Transito</option></select>
+        </div>
+      </div>
+      <!-- CARACTERÍSTICAS -->
+      <div style="background:var(--bone);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--mink);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px">Características</div>
+        <div class="fr c2">
+          <div class="fg" style="margin:0"><label class="fl">Color</label><input class="fc" id="p-color" placeholder="Ej: Nude, Negro, Café..."></div>
+          <div class="fg" style="margin:0"><label class="fl">Medidas / Tacón</label><input class="fc" id="p-medidas" placeholder="Ej: Tacón 8cm, Plataforma 3cm"></div>
+        </div>
       </div>
       <div class="fr c2">
         <div class="fg"><label class="fl">Proveedor</label><input class="fc" id="p-prov" placeholder="Nombre del proveedor"></div>
@@ -459,38 +380,62 @@ table.t tbody tr:last-child{border-bottom:none}
       <div class="fr c3">
         <div class="fg"><label class="fl">Precio Venta (Q)</label><input type="number" class="fc" id="p-precio" placeholder="0.00" step="0.01" min="0"></div>
         <div class="fg"><label class="fl">Stock Actual</label><input type="number" class="fc" id="p-stock" placeholder="0" min="0"></div>
-        <div class="fg"><label class="fl">Stock Mínimo</label><input type="number" class="fc" id="p-stockmin" placeholder="5" min="0"></div>
+        <div class="fg"><label class="fl">Stock Mínimo</label><input type="number" class="fc" id="p-stockmin" placeholder="3" min="0"></div>
+      </div>
+      <!-- IMAGEN -->
+      <div class="fg">
+        <label class="fl">Imagen del Producto <span style="font-weight:400;font-size:11px">(JPG/PNG, máx 500KB)</span></label>
+        <div class="upload-area" onclick="el('p-img-input').click()" id="upload-area">
+          <input type="file" id="p-img-input" accept="image/jpeg,image/png,image/webp" onchange="previewImg(this)">
+          <div id="img-preview-wrap">
+            <i class="bi bi-image" style="font-size:28px;color:var(--mink);display:block;margin-bottom:8px"></i>
+            <div style="font-size:13px;color:var(--mink)">Clic para subir imagen</div>
+            <div style="font-size:11px;color:#bbb;margin-top:4px">Se guardará en OneDrive/Sorelle-Imagenes</div>
+          </div>
+        </div>
+        <input type="hidden" id="p-img-url">
       </div>
     </div>
     <div class="mf"><button class="bg" onclick="closeM('modal-prod')">Cancelar</button><button class="bp" onclick="guardarProd()"><i class="bi bi-check-lg"></i>Guardar</button></div>
   </div>
 </div>
 
-<!-- MODAL NUEVO CLIENTE -->
-<div id="modal-cli" class="mo" style="display:none" onclick="bgClose(event,'modal-cli')">
+<!-- MODAL CARGA MASIVA CSV -->
+<div id="modal-csv" class="mo" style="display:none" onclick="bgClose(event,'modal-csv')">
   <div class="mb mmd">
-    <div class="mh"><div class="mt" id="mcli-title">Nuevo Cliente</div><button class="bx" onclick="closeM('modal-cli')"><i class="bi bi-x-lg"></i></button></div>
+    <div class="mh"><div class="mt2">Carga Masiva de Inventario</div><button class="bx" onclick="closeM('modal-csv')"><i class="bi bi-x-lg"></i></button></div>
     <div class="mc">
-      <input type="hidden" id="c-idx">
-      <div class="fr c2">
-        <div class="fg"><label class="fl">NIT *</label><input class="fc" id="c-nit" placeholder="Ej: 1234567-8 o CF"></div>
-        <div class="fg"><label class="fl">Nombre Completo *</label><input class="fc" id="c-nombre" placeholder="Nombre del cliente"></div>
+      <div style="background:var(--bone);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px">
+        <b>📋 Formato requerido del CSV:</b><br>
+        <code style="font-size:11px;color:var(--rose)">SKU,Nombre,Categoria,Talla,Color,Medidas,Proveedor,Costo,PrecioVenta,StockActual,StockMinimo</code><br><br>
+        <b>Categorías válidas:</b> Sandalias, Plataformas, Tacones, Tenis, Otros<br>
+        <b>Tallas válidas:</b> 34, 35, 36, 37, 38, 39, 40
       </div>
-      <div class="fr c2">
-        <div class="fg"><label class="fl">Teléfono</label><input class="fc" id="c-tel" placeholder="Ej: 5555-5555"></div>
-        <div class="fg"><label class="fl">Email</label><input class="fc" id="c-email" placeholder="correo@ejemplo.com"></div>
+      <button class="bg" onclick="descargarPlantilla()" style="margin-bottom:16px;width:100%;justify-content:center">
+        <i class="bi bi-file-earmark-arrow-down"></i>Descargar Plantilla CSV
+      </button>
+      <div class="csv-area" id="csv-area" onclick="el('csv-input').click()" 
+           ondragover="event.preventDefault();this.classList.add('drag')" 
+           ondragleave="this.classList.remove('drag')"
+           ondrop="onCsvDrop(event)">
+        <input type="file" id="csv-input" accept=".csv" onchange="procesarCSV(this.files[0])">
+        <i class="bi bi-file-earmark-spreadsheet" style="font-size:40px;color:var(--mink);display:block;margin-bottom:12px"></i>
+        <div style="font-weight:600;margin-bottom:4px">Arrastra el CSV aquí o haz clic</div>
+        <div style="font-size:12px;color:var(--mink)">Solo archivos .csv</div>
       </div>
-      <div class="fg"><label class="fl">Dirección</label><input class="fc" id="c-dir" placeholder="Dirección completa"></div>
-      <div class="fg"><label class="fl">Notas</label><input class="fc" id="c-notas" placeholder="Observaciones..."></div>
+      <div id="csv-preview" style="display:none;margin-top:16px"></div>
     </div>
-    <div class="mf"><button class="bg" onclick="closeM('modal-cli')">Cancelar</button><button class="bp" onclick="guardarCliente()"><i class="bi bi-check-lg"></i>Guardar</button></div>
+    <div class="mf">
+      <button class="bg" onclick="closeM('modal-csv')">Cancelar</button>
+      <button class="bp" id="btn-import-csv" style="display:none" onclick="importarCSV()"><i class="bi bi-cloud-upload"></i>Importar al Excel</button>
+    </div>
   </div>
 </div>
 
 <!-- MODAL DETALLE VENTA -->
 <div id="modal-venta" class="mo" style="display:none" onclick="bgClose(event,'modal-venta')">
   <div class="mb mlg">
-    <div class="mh"><div class="mt">Detalle de Venta</div><button class="bx" onclick="closeM('modal-venta')"><i class="bi bi-x-lg"></i></button></div>
+    <div class="mh"><div class="mt2">Detalle de Venta</div><button class="bx" onclick="closeM('modal-venta')"><i class="bi bi-x-lg"></i></button></div>
     <div class="mc" id="modal-venta-body"></div>
     <div class="mf">
       <button class="bg" onclick="closeM('modal-venta')">Cerrar</button>
@@ -499,7 +444,6 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
-<!-- RECIBO PARA IMPRIMIR -->
 <div id="receipt" style="display:none;font-family:'DM Sans',sans-serif;max-width:400px;margin:0 auto;padding:20px;font-size:13px"></div>
 
 <script>
@@ -522,25 +466,25 @@ const CFG={
   fileId:  "01632IMGWS346IRE4DPFB32IQTBQQ5F6R6",
   driveId: "b!g0ySFvrDWka56zZs1r4ESVsijK3fx9lNjrLBCUK5maWsMdXmFlbpTrHhhhJ54WvS",
   currency:"Q ",
-  storeName:"Sorelle Inversiones S.A.",
-  storePhone:"",
-  storeAddress:""
+  storeName:"Sorelle Inversiones S.A."
 };
 
 // ─── TABLAS EXCEL ────────────────────────────────────────
+// IMPORTANTE: El Excel debe tener estas 5 tablas nombradas exactamente así:
+// Productos | Movimientos | Clientes | Ventas | DetalleVentas
 const TBL={prod:"Productos",mov:"Movimientos",cli:"Clientes",vta:"Ventas",dtl:"DetalleVentas"};
-const CP=["SKU","Nombre","Categoria","Talla","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","Activo"];
+const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","RefVenta"];
-const CC=["NIT","Nombre","Telefono","Email","Direccion","Notas"];
+const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas"];
 const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
 // ─── AUTH ────────────────────────────────────────────────
-const CFG_OK=!CFG.clientId.includes("TU_")&&!CFG.tenantId.includes("TU_")&&!CFG.fileId.includes("TU_");
+const CFG_OK=!CFG.clientId.includes("TU_");
 const SCOPES=["Files.ReadWrite","Files.ReadWrite.All","Sites.ReadWrite.All","User.Read"];
 let msalApp=null,msalReady=false,me=null,token=null;
-let prods=[],movs=[],clis=[],vtas=[],dtls=[],charts_={};
-let cart=[];
+let prods=[],movs=[],clis=[],vtas=[],dtls=[],charts_={},cart=[];
+let csvRows=[];  // para carga masiva
 
 async function getMsal(){
   if(msalReady)return msalApp;
@@ -550,41 +494,27 @@ async function getMsal(){
   msalApp=new Lib.PublicClientApplication(cfg);
   await msalApp.initialize();msalReady=true;return msalApp;
 }
-
 async function initApp(){
   if(!CFG_OK){el("cfg-warn").style.display="block";return}
   showLo("Iniciando...");
-  try{
-    const app=await getMsal();
-    await app.handleRedirectPromise();
-    const acc=app.getAllAccounts();
-    if(acc.length>0){me=acc[0];await getToken();await bootApp()}
-    else hideLo();
-  }catch(e){hideLo();showErr("Error al conectar: "+e.message);console.error(e)}
+  try{const app=await getMsal();await app.handleRedirectPromise();const acc=app.getAllAccounts();
+    if(acc.length>0){me=acc[0];await getToken();await bootApp()}else hideLo();}
+  catch(e){hideLo();showErr("Error: "+e.message)}
 }
-
 async function signIn(){
   if(!CFG_OK){el("cfg-warn").style.display="block";return}
   el("login-err").style.display="none";
-  try{
-    showLo("Conectando...");
-    const app=await getMsal();
-    const r=await app.loginPopup({scopes:SCOPES});
-    me=r.account;token=r.accessToken;await bootApp();
-  }catch(e){hideLo();showErr("Error: "+e.message);console.error(e)}
+  try{showLo("Conectando...");const app=await getMsal();const r=await app.loginPopup({scopes:SCOPES});me=r.account;token=r.accessToken;await bootApp();}
+  catch(e){hideLo();showErr("Error: "+e.message)}
 }
-
 async function getToken(){
   try{const app=await getMsal();const r=await app.acquireTokenSilent({account:me,scopes:SCOPES});token=r.accessToken}
   catch{const app=await getMsal();const r=await app.acquireTokenPopup({account:me,scopes:SCOPES});token=r.accessToken}
 }
-
 function signOut(){if(msalApp)msalApp.logoutPopup();el("app").style.display="none";el("login-screen").style.display="flex"}
-
 async function bootApp(){
   el("login-screen").style.display="none";el("app").style.display="flex";
-  const name=me.name||me.username;
-  el("uname").textContent=name;el("uavatar").textContent=(name[0]||"U").toUpperCase();
+  const name=me.name||me.username;el("uname").textContent=name;el("uavatar").textContent=(name[0]||"U").toUpperCase();
   el("v-vendedor").value=name;
   el("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
   await refreshData();hideLo();
@@ -603,6 +533,22 @@ function toObjs(rows,cols){return rows.map((r,i)=>{const o={_i:i};cols.forEach((
 async function addRow(tbl,vals){return gapi("POST",`/tables/${tbl}/rows/add`,{values:[vals]})}
 async function updRow(tbl,i,vals){return gapi("PATCH",`/tables/${tbl}/rows/$/itemAt(index=${i})`,{values:[vals]})}
 
+// Subir imagen a OneDrive
+async function uploadImg(file,sku){
+  await getToken();
+  const ext=file.name.split('.').pop();
+  const fname=`${sku.replace(/[^a-zA-Z0-9]/g,'_')}.${ext}`;
+  const url=`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/root:/Sorelle-Imagenes/${fname}:/content`;
+  const buf=await file.arrayBuffer();
+  const r=await fetch(url,{method:"PUT",headers:{Authorization:"Bearer "+token,"Content-Type":file.type},body:buf});
+  if(!r.ok)throw new Error("Error al subir imagen");
+  const d=await r.json();
+  // Obtener link de descarga directo
+  const share=await fetch(`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${d.id}/thumbnails`,{headers:{Authorization:"Bearer "+token}});
+  const sd=await share.json();
+  return sd?.value?.[0]?.large?.url || d.webUrl || "";
+}
+
 // ─── DATA ────────────────────────────────────────────────
 async function refreshData(){
   showLo("Cargando datos...");
@@ -615,21 +561,21 @@ async function refreshData(){
       getRows(TBL.dtl).catch(()=>[])
     ]);
     prods=toObjs(pr,CP);movs=toObjs(mr,CM);clis=toObjs(cr,CC);vtas=toObjs(vr,CV);dtls=toObjs(dr,CD);
-    // populate selects
     const cats=[...new Set(prods.map(p=>p.Categoria).filter(Boolean))];
     const tall=[...new Set(prods.map(p=>String(p.Talla)).filter(Boolean))].sort((a,b)=>+a-+b);
     popSel("fil-cat",cats,"Todas las categorías");
     popSel("fil-talla",tall,"Todas las tallas");
-    // fill venta products dropdown
     const vsel=el("v-prod");
     vsel.innerHTML='<option value="">Seleccionar producto...</option>';
-    prods.forEach((p,i)=>{if(+p.StockActual>0||p.Activo){const o=document.createElement("option");o.value=i;o.textContent=`${p.SKU} · ${p.Nombre} (T${p.Talla}) — Stock: ${p.StockActual}`;vsel.appendChild(o)}});
+    prods.forEach((p,i)=>{
+      if(+p.StockActual>0){
+        const o=document.createElement("option");
+        o.value=i;o.textContent=`${p.SKU} · ${p.Nombre} (T${p.Talla}${p.Color?', '+p.Color:''}) — Stock: ${p.StockActual}`;
+        vsel.appendChild(o);
+      }
+    });
     renderDash();renderProductos();renderClientes();renderHistorial();renderMov();
-  }catch(e){
-    hideLo();
-    alert("❌ Error al cargar datos.\n\n"+e.message+"\n\nVerifica que el Excel tenga las 5 tablas correctamente nombradas:\nProductos, Movimientos, Clientes, Ventas, DetalleVentas");
-    return;
-  }
+  }catch(e){hideLo();alert("❌ Error al cargar datos:\n"+e.message);return}
   hideLo();
 }
 
@@ -642,15 +588,12 @@ function renderDash(){
   const ingMes=vtaMes.reduce((s,v)=>s+(+v.Total||0),0);
   const activos=prods.filter(p=>p.Activo!==false&&p.Activo!==0&&p.Activo!=="FALSE");
   const bajo=activos.filter(p=>(+p.StockActual||0)<=(+p.StockMinimo||0));
-
   el("kpi-vtahoy").textContent=vtaHoy.length;
-  el("kpi-vtahoy-s").textContent="Q "+fmt2(vtaHoy.reduce((s,v)=>s+(+v.Total||0),0));
-  el("kpi-ingmes").textContent="Q "+fmt2(ingMes);
+  el("kpi-vtahoy-s").textContent=CFG.currency+fmt2(vtaHoy.reduce((s,v)=>s+(+v.Total||0),0));
+  el("kpi-ingmes").textContent=CFG.currency+fmt2(ingMes);
   el("kpi-prods").textContent=activos.length;
   el("kpi-prods-s").textContent=`${prods.reduce((s,p)=>s+(+p.StockActual||0),0)} unidades`;
   el("kpi-bajo").textContent=bajo.length;
-
-  // Últimas ventas
   const ultV=[...vtas].reverse().slice(0,7);
   el("dash-ventas").innerHTML=ultV.length===0?`<div class="empty"><i class="bi bi-receipt"></i>Sin ventas aún</div>`:
     `<table class="t"><thead><tr><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Total</th></tr></thead>
@@ -658,37 +601,26 @@ function renderDash(){
        <td style="font-size:12px">${fmtDate(v.Fecha)}</td>
        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.ClienteNombre||"—"}</td>
        <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
-       <td style="font-weight:700">${CFG.currency}${fmt2(v.Total)}</td>
-     </tr>`).join("")}</tbody></table>`;
-
-  // Stock bajo
+       <td style="font-weight:700">${CFG.currency}${fmt2(v.Total)}</td></tr>`).join("")}</tbody></table>`;
   el("dash-stock").innerHTML=bajo.length===0?
     `<div class="empty"><i class="bi bi-check-circle" style="color:var(--green);opacity:.5"></i><div style="color:var(--green);font-weight:600">Todo en orden</div></div>`:
     `<table class="t"><thead><tr><th>SKU</th><th>Nombre</th><th>Talla</th><th>Stock</th></tr></thead>
      <tbody>${bajo.map(p=>`<tr>
        <td><code style="font-size:11px">${p.SKU}</code></td>
-       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${p.Nombre}</td>
-       <td>${p.Talla}</td>
-       <td><span class="b b-s">${p.StockActual}</span></td>
-     </tr>`).join("")}</tbody></table>`;
+       <td style="font-size:12px">${p.Nombre}</td><td>${p.Talla}</td>
+       <td><span class="b b-s">${p.StockActual}</span></td></tr>`).join("")}</tbody></table>`;
 }
 
 // ─── VENTAS ──────────────────────────────────────────────
 function onVProdChange(){
-  const i=el("v-prod").value;
-  const info=el("v-prod-info");
+  const i=el("v-prod").value;const info=el("v-prod-info");
   if(!i){info.style.display="none";return}
-  const p=prods[+i];
-  info.style.display="block";
-  info.innerHTML=`<b>${p.Nombre}</b> | Talla: <b>${p.Talla}</b> | Stock: <b>${p.StockActual}</b> | P.Venta: <b>${CFG.currency}${fmt2(p.PrecioVenta)}</b>`;
+  const p=prods[+i];info.style.display="block";
+  info.innerHTML=`<b>${p.Nombre}</b> | T<b>${p.Talla}</b>${p.Color?' | '+p.Color:''} | Stock: <b>${p.StockActual}</b> | P.Venta: <b>${CFG.currency}${fmt2(p.PrecioVenta)}</b>`;
 }
-
 function addToCart(){
-  const i=el("v-prod").value;
-  if(!i){alert("Selecciona un producto");return}
-  const p=prods[+i];
-  const cant=parseInt(el("v-cant").value)||1;
-  if(cant<1){alert("Cantidad inválida");return}
+  const i=el("v-prod").value;if(!i){alert("Selecciona un producto");return}
+  const p=prods[+i];const cant=parseInt(el("v-cant").value)||1;
   const inCart=cart.findIndex(c=>c.sku===p.SKU);
   const totalCant=(inCart>=0?cart[inCart].cant:0)+cant;
   if(totalCant>(+p.StockActual||0)){alert(`⚠️ Stock insuficiente. Disponible: ${p.StockActual}`);return}
@@ -697,47 +629,33 @@ function addToCart(){
   el("v-prod").value="";el("v-cant").value="1";el("v-prod-info").style.display="none";
   renderCart();
 }
-
 function renderCart(){
-  const c=el("cart-items");
-  el("cart-count").textContent=cart.length+" item"+(cart.length!==1?"s":"");
+  const c=el("cart-items");el("cart-count").textContent=cart.length+" item"+(cart.length!==1?"s":"");
   if(!cart.length){c.innerHTML='<div class="cart-empty">Sin productos aún</div>';calcTotales();return}
-  c.innerHTML=cart.map((it,i)=>`
-    <div class="cart-item">
-      <button class="cart-del" onclick="removeCart(${i})"><i class="bi bi-x-circle"></i></button>
-      <div class="cart-info">
-        <div class="cart-name">${it.nombre}</div>
-        <div class="cart-sub">Talla ${it.talla} · ${CFG.currency}${fmt2(it.precio)} c/u</div>
-      </div>
-      <input type="number" class="cart-qty" value="${it.cant}" min="1" onchange="updCart(${i},this.value)">
-      <div class="cart-total">${CFG.currency}${fmt2(it.sub)}</div>
-    </div>`).join("");
+  c.innerHTML=cart.map((it,i)=>`<div class="cart-item">
+    <button class="cart-del" onclick="removeCart(${i})"><i class="bi bi-x-circle"></i></button>
+    <div class="cart-info"><div class="cart-name">${it.nombre}</div><div class="cart-sub">Talla ${it.talla} · ${CFG.currency}${fmt2(it.precio)}</div></div>
+    <input type="number" class="cart-qty" value="${it.cant}" min="1" onchange="updCart(${i},this.value)">
+    <div class="cart-total">${CFG.currency}${fmt2(it.sub)}</div></div>`).join("");
   calcTotales();
 }
-
 function removeCart(i){cart.splice(i,1);renderCart()}
 function updCart(i,v){
-  const cant=parseInt(v)||1;
-  const p=prods[cart[i].idx];
+  const cant=parseInt(v)||1;const p=prods[cart[i].idx];
   if(cant>(+p.StockActual||0)){alert(`Stock máx: ${p.StockActual}`);return}
   cart[i].cant=cant;cart[i].sub=cant*cart[i].precio;renderCart();
 }
-
 function calcTotales(){
-  const sub=cart.reduce((s,it)=>s+it.sub,0);
-  const env=parseFloat(el("v-cenv").value)||0;
-  const total=sub+env;
+  const sub=cart.reduce((s,it)=>s+it.sub,0);const env=parseFloat(el("v-cenv").value)||0;
   el("t-sub").textContent=CFG.currency+fmt2(sub);
   el("t-env").textContent=env>0?CFG.currency+fmt2(env):"—";
-  el("t-total").textContent=CFG.currency+fmt2(total);
+  el("t-total").textContent=CFG.currency+fmt2(sub+env);
 }
 
 async function confirmarVenta(){
   if(!cart.length){alert("Agrega al menos un producto");return}
-  const nombre=el("v-nombre").value.trim();
-  const vendedor=el("v-vendedor").value.trim();
+  const nombre=el("v-nombre").value.trim(),vendedor=el("v-vendedor").value.trim();
   if(!nombre||!vendedor){alert("Nombre de cliente y vendedor son requeridos");return}
-
   showLo("Registrando venta...");
   try{
     const id="VTA-"+Date.now();
@@ -746,51 +664,55 @@ async function confirmarVenta(){
     const env=parseFloat(el("v-cenv").value)||0;
     const total=sub+env;
     const nit=el("v-nit").value.trim()||"CF";
-    const tel=el("v-tel").value.trim();
-    const dir=el("v-dir").value.trim();
-    const envio=el("v-envio").value;
-    const pago=el("v-pago").value;
-    const notas=el("v-notas").value.trim();
+    const tel=el("v-tel").value.trim(),dir=el("v-dir").value.trim();
 
-    // 1. Guardar venta
-    await addRow(TBL.vta,[id,fecha,vendedor,nit,nombre,tel,dir,envio,pago,sub,env,total,notas]);
+    // 1. Guardar encabezado de venta
+    showLo("Guardando venta (1/4)...");
+    await addRow(TBL.vta,[id,fecha,vendedor,nit,nombre,tel,dir,el("v-envio").value,el("v-pago").value,sub,env,total,el("v-notas").value.trim()]);
 
-    // 2. Guardar detalle + movimientos + actualizar stock
+    // 2. Guardar líneas de detalle
+    showLo("Guardando detalle (2/4)...");
     for(const it of cart){
       await addRow(TBL.dtl,[id,it.sku,it.nombre,it.talla,it.cant,it.precio,it.sub]);
+    }
+
+    // 3. Registrar movimientos y actualizar stock
+    showLo("Actualizando inventario (3/4)...");
+    for(const it of cart){
       await addRow(TBL.mov,[Date.now().toString(),it.sku,it.nombre,"Salida",it.cant,fecha,vendedor,it.precio,it.sub,id]);
       const p=prods[it.idx];
       const nuevoStock=Math.max(0,(+p.StockActual||0)-it.cant);
-      const pVals=CP.map(c=>c==="StockActual"?nuevoStock:p[c]);
-      await updRow(TBL.prod,p._i,pVals);
+      await updRow(TBL.prod,p._i,CP.map(c=>c==="StockActual"?nuevoStock:p[c]));
     }
 
-    // 3. Guardar/actualizar cliente
-    const cliExiste=clis.findIndex(c=>String(c.NIT).toUpperCase()===nit.toUpperCase());
-    if(cliExiste>=0){/* cliente ya existe, no duplicar */}
-    else if(nit&&nit!=="CF") await addRow(TBL.cli,[nit,nombre,tel,"",dir,""]);
+    // 4. Auto-guardar cliente (sin requerir tabla separada si falla)
+    showLo("Guardando cliente (4/4)...");
+    try{
+      const cliExiste=clis.findIndex(c=>String(c.NIT).toUpperCase()===nit.toUpperCase());
+      if(cliExiste<0&&nit){
+        await addRow(TBL.cli,[nit,nombre,tel,dir,1]);
+      } else if(cliExiste>=0){
+        // Incrementar contador de ventas
+        const c=clis[cliExiste];
+        await updRow(TBL.cli,c._i,[c.NIT,c.Nombre,c.Telefono||tel,c.Direccion||dir,(+c.TotalVentas||0)+1]);
+      }
+    }catch(e){console.warn("No se pudo guardar cliente (no crítico):",e.message)}
 
-    // 4. Mostrar recibo
-    const ventaData={id,fecha,vendedor,nit,nombre,tel,dir,envio,pago,sub,env,total,notas,items:[...cart]};
+    // Mostrar recibo
+    const ventaData={id,fecha,vendedor,nit,nombre,tel,dir,envio:el("v-envio").value,pago:el("v-pago").value,sub,env,total,notas:el("v-notas").value,items:[...cart]};
     mostrarRecibo(ventaData);
-
-    // 5. Limpiar formulario
     cart=[];renderCart();
     ["v-nit","v-nombre","v-tel","v-dir","v-notas"].forEach(id=>el(id).value="");
     el("v-cenv").value="0";
-
     await refreshData();
   }catch(e){hideLo();alert("❌ Error al guardar la venta:\n"+e.message)}
 }
 
 function mostrarRecibo(v){
   hideLo();
-  // Llenar datos para impresión
-  el("receipt").innerHTML=`
+  const reciboHTML=`
     <div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #111;padding-bottom:16px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${CFG.storeName}</div>
-      ${CFG.storeAddress?`<div style="font-size:12px;color:#555">${CFG.storeAddress}</div>`:""}
-      ${CFG.storePhone?`<div style="font-size:12px;color:#555">Tel: ${CFG.storePhone}</div>`:""}
       <div style="font-size:11px;color:#777;margin-top:8px">RECIBO DE VENTA</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:16px;font-size:12px">
@@ -804,42 +726,29 @@ function mostrarRecibo(v){
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
       <thead><tr style="background:#f5f0e8"><th style="padding:6px;text-align:left">Producto</th><th style="padding:6px;text-align:center">T.</th><th style="padding:6px;text-align:center">Cant.</th><th style="padding:6px;text-align:right">P.Unit</th><th style="padding:6px;text-align:right">Total</th></tr></thead>
       <tbody>${v.items.map(it=>`<tr style="border-bottom:1px solid #eee">
-        <td style="padding:6px">${it.nombre}</td>
-        <td style="padding:6px;text-align:center">${it.talla}</td>
+        <td style="padding:6px">${it.nombre}</td><td style="padding:6px;text-align:center">${it.talla}</td>
         <td style="padding:6px;text-align:center">${it.cant}</td>
         <td style="padding:6px;text-align:right">${CFG.currency}${fmt2(it.precio)}</td>
-        <td style="padding:6px;text-align:right">${CFG.currency}${fmt2(it.sub)}</td>
-      </tr>`).join("")}</tbody>
+        <td style="padding:6px;text-align:right">${CFG.currency}${fmt2(it.sub)}</td></tr>`).join("")}</tbody>
     </table>
     <div style="text-align:right;font-size:13px">
-      <div style="margin-bottom:4px">Subtotal: <b>${CFG.currency}${fmt2(v.sub)}</b></div>
-      ${v.env>0?`<div style="margin-bottom:4px">Envío: <b>${CFG.currency}${fmt2(v.env)}</b></div>`:""}
+      <div>Subtotal: <b>${CFG.currency}${fmt2(v.sub)}</b></div>
+      ${v.env>0?`<div>Envío: <b>${CFG.currency}${fmt2(v.env)}</b></div>`:""}
       <div style="font-size:1.1rem;font-weight:700;border-top:2px solid #111;padding-top:8px;margin-top:8px">TOTAL: ${CFG.currency}${fmt2(v.total)}</div>
     </div>
     ${v.notas?`<div style="margin-top:16px;font-size:12px;color:#555;border-top:1px solid #eee;padding-top:8px"><b>Notas:</b> ${v.notas}</div>`:""}
     <div style="text-align:center;margin-top:24px;font-size:11px;color:#999">¡Gracias por tu compra!</div>`;
-
-  // Mostrar en modal también
-  el("modal-venta-body").innerHTML=`
-    <div class="ibox" style="margin-bottom:16px"><b>✅ Venta registrada exitosamente.</b> ID: ${v.id}</div>
-    ${el("receipt").innerHTML}`;
+  el("receipt").innerHTML=reciboHTML;
+  el("modal-venta-body").innerHTML=`<div class="ibox" style="margin-bottom:16px">✅ <b>Venta registrada. ID: ${v.id}</b></div>${reciboHTML}`;
   el("modal-venta").style.display="flex";
 }
-
-function imprimirRecibo(){
-  el("receipt").style.display="block";
-  window.print();
-  el("receipt").style.display="none";
-}
+function imprimirRecibo(){el("receipt").style.display="block";window.print();el("receipt").style.display="none"}
 
 // ─── HISTORIAL ───────────────────────────────────────────
 function renderHistorial(){
-  const fi=el("hfi").value,ff=el("hff").value;
-  const pago=el("hpago").value,vend=el("hvend").value.toLowerCase();
-  const list=vtas.filter(v=>{
-    const f=v.Fecha?String(v.Fecha).substring(0,10):"";
-    return(!fi||f>=fi)&&(!ff||f<=ff)&&(!pago||v.MetodoPago===pago)&&(!vend||(v.Vendedor||"").toLowerCase().includes(vend));
-  });
+  const fi=el("hfi").value,ff=el("hff").value,pago=el("hpago").value,vend=el("hvend").value.toLowerCase();
+  const list=vtas.filter(v=>{const f=v.Fecha?String(v.Fecha).substring(0,10):"";
+    return(!fi||f>=fi)&&(!ff||f<=ff)&&(!pago||v.MetodoPago===pago)&&(!vend||(v.Vendedor||"").toLowerCase().includes(vend))});
   const tb=el("tbody-hist");
   if(!list.length){tb.innerHTML=`<tr><td colspan="8"><div class="empty"><i class="bi bi-receipt"></i>Sin ventas</div></td></tr>`;return}
   tb.innerHTML=[...list].reverse().map(v=>`<tr>
@@ -855,8 +764,7 @@ function renderHistorial(){
 }
 
 function verVenta(id){
-  const v=vtas.find(x=>x.ID===id);
-  if(!v)return;
+  const v=vtas.find(x=>x.ID===id);if(!v)return;
   const dets=dtls.filter(d=>d.VentaID===id);
   el("modal-venta-body").innerHTML=`
     <div class="fr c2" style="gap:16px;margin-bottom:16px">
@@ -867,56 +775,17 @@ function verVenta(id){
       <div><div class="fl">Vendedor</div><div>${v.Vendedor}</div></div>
       <div><div class="fl">Pago</div><div><span class="b b-green">${v.MetodoPago}</span></div></div>
       <div><div class="fl">Envío</div><div><span class="b b-blue">${v.TipoEnvio}</span></div></div>
-      <div><div class="fl">Teléfono</div><div>${v.ClienteTel||"—"}</div></div>
+      ${v.ClienteTel?`<div><div class="fl">Teléfono</div><div>${v.ClienteTel}</div></div>`:""}
       ${v.ClienteDir?`<div style="grid-column:1/-1"><div class="fl">Dirección</div><div>${v.ClienteDir}</div></div>`:""}
     </div>
-    <table class="t" style="margin-bottom:16px">
-      <thead><tr><th>Producto</th><th>Talla</th><th>Cant.</th><th>P.Unit</th><th>Subtotal</th></tr></thead>
-      <tbody>${dets.map(d=>`<tr>
-        <td style="font-weight:500">${d.Producto}</td>
-        <td>${d.Talla}</td>
-        <td style="text-align:center;font-weight:600">${d.Cantidad}</td>
-        <td>${CFG.currency}${fmt2(d.PrecioUnit)}</td>
-        <td style="font-weight:600">${CFG.currency}${fmt2(d.Subtotal)}</td>
-      </tr>`).join("")}</tbody>
-    </table>
+    <table class="t" style="margin-bottom:16px"><thead><tr><th>Producto</th><th>Talla</th><th>Cant.</th><th>P.Unit</th><th>Subtotal</th></tr></thead>
+      <tbody>${dets.map(d=>`<tr><td style="font-weight:500">${d.Producto}</td><td>${d.Talla}</td><td style="text-align:center;font-weight:600">${d.Cantidad}</td><td>${CFG.currency}${fmt2(d.PrecioUnit)}</td><td style="font-weight:600">${CFG.currency}${fmt2(d.Subtotal)}</td></tr>`).join("")}</tbody></table>
     <div class="total-box">
       <div class="total-row"><span>Subtotal</span><span>${CFG.currency}${fmt2(v.Subtotal)}</span></div>
       ${+v.CostoEnvio>0?`<div class="total-row"><span>Envío</span><span>${CFG.currency}${fmt2(v.CostoEnvio)}</span></div>`:""}
       <div class="total-row grand"><span>TOTAL</span><span>${CFG.currency}${fmt2(v.Total)}</span></div>
-    </div>
-    ${v.Notas?`<div style="margin-top:12px;font-size:13px;color:var(--mink)"><b>Notas:</b> ${v.Notas}</div>`:""}`;
-
-  // Preparar recibo para imprimir
-  el("receipt").innerHTML=`
-    <div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #111;padding-bottom:16px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${CFG.storeName}</div>
-      <div style="font-size:11px;color:#777;margin-top:8px">RECIBO DE VENTA</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:16px;font-size:12px">
-      <div><b>No.:</b> ${v.ID}</div><div><b>Fecha:</b> ${fmtDate(v.Fecha)}</div>
-      <div><b>Vendedor:</b> ${v.Vendedor}</div><div><b>Pago:</b> ${v.MetodoPago}</div>
-      <div><b>Cliente:</b> ${v.ClienteNombre}</div><div><b>NIT:</b> ${v.ClienteNIT}</div>
-      ${v.ClienteTel?`<div><b>Tel:</b> ${v.ClienteTel}</div>`:""}
-      ${v.ClienteDir?`<div style="grid-column:1/-1"><b>Dirección:</b> ${v.ClienteDir}</div>`:""}
-      <div><b>Envío:</b> ${v.TipoEnvio}</div>
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
-      <thead><tr style="background:#f5f0e8"><th style="padding:6px;text-align:left">Producto</th><th style="padding:6px;text-align:center">T.</th><th style="padding:6px;text-align:center">Cant.</th><th style="padding:6px;text-align:right">P.Unit</th><th style="padding:6px;text-align:right">Total</th></tr></thead>
-      <tbody>${dets.map(d=>`<tr style="border-bottom:1px solid #eee">
-        <td style="padding:6px">${d.Producto}</td><td style="padding:6px;text-align:center">${d.Talla}</td>
-        <td style="padding:6px;text-align:center">${d.Cantidad}</td>
-        <td style="padding:6px;text-align:right">${CFG.currency}${fmt2(d.PrecioUnit)}</td>
-        <td style="padding:6px;text-align:right">${CFG.currency}${fmt2(d.Subtotal)}</td>
-      </tr>`).join("")}</tbody>
-    </table>
-    <div style="text-align:right;font-size:13px">
-      <div>Subtotal: <b>${CFG.currency}${fmt2(v.Subtotal)}</b></div>
-      ${+v.CostoEnvio>0?`<div>Envío: <b>${CFG.currency}${fmt2(v.CostoEnvio)}</b></div>`:""}
-      <div style="font-size:1.1rem;font-weight:700;border-top:2px solid #111;padding-top:8px;margin-top:8px">TOTAL: ${CFG.currency}${fmt2(v.Total)}</div>
-    </div>
-    <div style="text-align:center;margin-top:24px;font-size:11px;color:#999">¡Gracias por tu compra!</div>`;
-
+    </div>`;
+  el("receipt").innerHTML=el("modal-venta-body").innerHTML;
   el("modal-venta").style.display="flex";
 }
 
@@ -925,35 +794,15 @@ function renderClientes(){
   const q=(el("busq-cli").value||"").toLowerCase();
   const list=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
   const tb=el("tbody-cli");
-  if(!list.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="bi bi-people"></i>Sin clientes</div></td></tr>`;return}
+  if(!list.length){tb.innerHTML=`<tr><td colspan="5"><div class="empty"><i class="bi bi-people"></i>Sin clientes aún — se registran automáticamente al confirmar una venta</div></td></tr>`;return}
   tb.innerHTML=list.map(c=>`<tr>
     <td><code style="font-size:12px">${c.NIT}</code></td>
     <td style="font-weight:500">${c.Nombre}</td>
     <td style="color:var(--mink)">${c.Telefono||"—"}</td>
     <td style="color:var(--mink);font-size:12px">${c.Direccion||"—"}</td>
-    <td style="text-align:center"><span class="b b-cat">${vtas.filter(v=>v.ClienteNIT===c.NIT).length}</span></td>
-    <td><button onclick="openModalCliente(${c._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px 6px"><i class="bi bi-pencil"></i></button></td>
+    <td style="text-align:center"><span class="b b-cat">${c.TotalVentas||0}</span></td>
   </tr>`).join("");
 }
-
-function openModalCliente(idx=null){
-  el("c-idx").value=idx!==null?idx:"";
-  el("mcli-title").textContent=idx!==null?"Editar Cliente":"Nuevo Cliente";
-  if(idx!==null){const c=clis[idx];el("c-nit").value=c.NIT||"";el("c-nombre").value=c.Nombre||"";el("c-tel").value=c.Telefono||"";el("c-email").value=c.Email||"";el("c-dir").value=c.Direccion||"";el("c-notas").value=c.Notas||""}
-  else["c-nit","c-nombre","c-tel","c-email","c-dir","c-notas"].forEach(id=>el(id).value="");
-  el("modal-cli").style.display="flex";
-}
-
-async function guardarCliente(){
-  const nit=el("c-nit").value.trim(),nombre=el("c-nombre").value.trim();
-  if(!nit||!nombre){alert("NIT y Nombre son requeridos");return}
-  const idx=el("c-idx").value;
-  const vals=[nit,nombre,el("c-tel").value.trim(),el("c-email").value.trim(),el("c-dir").value.trim(),el("c-notas").value.trim()];
-  showLo("Guardando...");
-  try{idx!==""?await updRow(TBL.cli,+idx,vals):await addRow(TBL.cli,vals);closeM("modal-cli");await refreshData()}
-  catch(e){hideLo();alert("Error: "+e.message)}
-}
-
 function buscarCliente(){
   const nit=el("v-nit").value.trim().toUpperCase();
   const c=clis.find(x=>String(x.NIT).toUpperCase()===nit);
@@ -966,42 +815,76 @@ function renderProductos(){
   const cat=el("fil-cat").value,tall=el("fil-talla").value;
   const list=prods.filter(p=>(!q||p.Nombre?.toLowerCase().includes(q)||p.SKU?.toLowerCase().includes(q))&&(!cat||p.Categoria===cat)&&(!tall||String(p.Talla)===tall));
   const tb=el("tbody-prod");
-  if(!list.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty"><i class="bi bi-box-seam"></i>Sin productos</div></td></tr>`;return}
+  if(!list.length){tb.innerHTML=`<tr><td colspan="13"><div class="empty"><i class="bi bi-box-seam"></i>Sin productos</div></td></tr>`;return}
   const low=p=>(+p.StockActual||0)<=(+p.StockMinimo||0);
-  const margen=p=>+p.Costo>0?((+p.PrecioVenta-+p.Costo)/+p.Costo*100).toFixed(0)+"%":"—";
+  const margen=p=>+p.Costo>0?(((+p.PrecioVenta-+p.Costo)/+p.Costo)*100).toFixed(0)+"%":"—";
   tb.innerHTML=list.map(p=>`<tr>
-    <td><code style="font-size:12px;color:var(--rose)">${p.SKU}</code></td>
+    <td>${p.ImagenURL?`<img src="${p.ImagenURL}" class="prod-img" onerror="this.style.display='none'">`:`<div class="prod-img-ph"><i class="bi bi-image"></i></div>`}</td>
+    <td><code style="font-size:11px;color:var(--rose)">${p.SKU}</code></td>
     <td style="font-weight:500">${p.Nombre}</td>
     <td><span class="b b-cat">${p.Categoria||""}</span></td>
     <td style="text-align:center;font-weight:600">${p.Talla}</td>
-    <td style="color:var(--mink);font-size:12px">${p.Proveedor||"—"}</td>
+    <td style="font-size:12px;color:var(--mink)">${p.Color||"—"}</td>
+    <td style="font-size:12px;color:var(--mink)">${p.Medidas||"—"}</td>
     <td>${CFG.currency}${fmt2(p.Costo)}</td>
     <td style="font-weight:600">${CFG.currency}${fmt2(p.PrecioVenta)}</td>
     <td style="color:var(--green);font-weight:600">${margen(p)}</td>
     <td class="${low(p)?"stock-low":""}">${p.StockActual}${low(p)?' <span class="b b-warn" style="font-size:10px">⚠️</span>':""}</td>
     <td style="color:var(--mink);font-size:12px">${p.Ubicacion||""}</td>
-    <td style="white-space:nowrap">
-      <button onclick="openModalProd(${p._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px 6px"><i class="bi bi-pencil"></i></button>
-    </td>
+    <td><button onclick="openModalProd(${p._i})" style="background:none;border:none;cursor:pointer;color:var(--mink);padding:4px 6px"><i class="bi bi-pencil"></i></button></td>
   </tr>`).join("");
 }
 
 function openModalProd(idx=null){
   el("p-idx").value=idx!==null?idx:"";
   el("mprod-title").textContent=idx!==null?"Editar Producto":"Nuevo Producto";
-  if(idx!==null){const p=prods[idx];el("p-sku").value=p.SKU||"";el("p-nombre").value=p.Nombre||"";el("p-cat").value=p.Categoria||"Casual";el("p-talla").value=String(p.Talla||"36");el("p-ubic").value=p.Ubicacion||"Bodega Principal";el("p-prov").value=p.Proveedor||"";el("p-costo").value=p.Costo||"";el("p-precio").value=p.PrecioVenta||"";el("p-stock").value=p.StockActual||"0";el("p-stockmin").value=p.StockMinimo||"5"}
-  else{["p-sku","p-nombre","p-prov","p-costo","p-precio"].forEach(id=>el(id).value="");el("p-stock").value="0";el("p-stockmin").value="5"}
+  el("p-img-url").value="";
+  el("img-preview-wrap").innerHTML=`<i class="bi bi-image" style="font-size:28px;color:var(--mink);display:block;margin-bottom:8px"></i><div style="font-size:13px;color:var(--mink)">Clic para subir imagen</div><div style="font-size:11px;color:#bbb;margin-top:4px">Se guardará en OneDrive/Sorelle-Imagenes</div>`;
+  if(idx!==null){
+    const p=prods[idx];
+    el("p-sku").value=p.SKU||"";el("p-nombre").value=p.Nombre||"";
+    el("p-cat").value=p.Categoria||"Sandalias";el("p-talla").value=String(p.Talla||"36");
+    el("p-ubic").value=p.Ubicacion||"Bodega Principal";el("p-prov").value=p.Proveedor||"";
+    el("p-color").value=p.Color||"";el("p-medidas").value=p.Medidas||"";
+    el("p-costo").value=p.Costo||"";el("p-precio").value=p.PrecioVenta||"";
+    el("p-stock").value=p.StockActual||"0";el("p-stockmin").value=p.StockMinimo||"3";
+    el("p-img-url").value=p.ImagenURL||"";
+    if(p.ImagenURL)el("img-preview-wrap").innerHTML=`<img src="${p.ImagenURL}" style="max-height:80px;border-radius:8px;margin-bottom:8px"><div style="font-size:12px;color:var(--mink)">Clic para cambiar</div>`;
+  }else{
+    ["p-sku","p-nombre","p-prov","p-costo","p-precio","p-color","p-medidas"].forEach(id=>el(id).value="");
+    el("p-stock").value="0";el("p-stockmin").value="3";
+  }
   el("modal-prod").style.display="flex";
+}
+
+function previewImg(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>600*1024){alert("La imagen es muy grande. Máximo 500KB.");input.value="";return}
+  const reader=new FileReader();
+  reader.onload=e=>el("img-preview-wrap").innerHTML=`<img src="${e.target.result}" style="max-height:80px;border-radius:8px;margin-bottom:8px"><div style="font-size:12px;color:var(--mink)">✅ Lista para subir</div>`;
+  reader.readAsDataURL(file);
 }
 
 async function guardarProd(){
   const sku=el("p-sku").value.trim(),nombre=el("p-nombre").value.trim();
   if(!sku||!nombre){alert("SKU y Nombre son requeridos");return}
   const idx=el("p-idx").value;
-  const vals=[sku,nombre,el("p-cat").value,el("p-talla").value,el("p-prov").value.trim(),el("p-ubic").value,parseFloat(el("p-costo").value)||0,parseFloat(el("p-precio").value)||0,parseInt(el("p-stock").value)||0,parseInt(el("p-stockmin").value)||5,true];
-  showLo("Guardando...");
-  try{idx!==""?await updRow(TBL.prod,+idx,vals):await addRow(TBL.prod,vals);closeM("modal-prod");await refreshData()}
-  catch(e){hideLo();alert("Error: "+e.message)}
+  showLo("Guardando producto...");
+  try{
+    let imgUrl=el("p-img-url").value||"";
+    const imgFile=el("p-img-input").files[0];
+    if(imgFile){showLo("Subiendo imagen...");imgUrl=await uploadImg(imgFile,sku)}
+    const vals=[sku,nombre,el("p-cat").value,el("p-talla").value,el("p-color").value.trim(),el("p-medidas").value.trim(),
+      el("p-prov").value.trim(),el("p-ubic").value,parseFloat(el("p-costo").value)||0,parseFloat(el("p-precio").value)||0,
+      parseInt(el("p-stock").value)||0,parseInt(el("p-stockmin").value)||3,imgUrl,true];
+    idx!==""?await updRow(TBL.prod,+idx,vals):await addRow(TBL.prod,vals);
+    // Si es nuevo con stock, registrar entrada
+    if(idx===""&&parseInt(el("p-stock").value)>0){
+      await addRow(TBL.mov,[Date.now().toString(),sku,nombre,"Entrada",parseInt(el("p-stock").value),new Date().toISOString().split("T")[0],me.name||"Admin",parseFloat(el("p-costo").value)||0,0,"Stock inicial"]);
+    }
+    el("p-img-input").value="";
+    closeM("modal-prod");await refreshData();
+  }catch(e){hideLo();alert("Error: "+e.message)}
 }
 
 // ─── MOVIMIENTOS ─────────────────────────────────────────
@@ -1014,7 +897,7 @@ function renderMov(){
     <td style="white-space:nowrap;font-size:12px">${fmtDate(m.Fecha)}</td>
     <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${m.Producto}</td>
     <td><code style="font-size:11px">${m.SKU}</code></td>
-    <td>${badgeMov(m.Tipo)}</td>
+    <td><span class="b ${m.Tipo==="Entrada"?"b-e":"b-s"}">${m.Tipo}</span></td>
     <td style="text-align:center;font-weight:600">${m.Cantidad}</td>
     <td style="font-size:12px;color:var(--mink)">${m.Vendedor||"—"}</td>
     <td>${CFG.currency}${fmt2(m.PrecioUnit)}</td>
@@ -1029,42 +912,88 @@ function renderReportes(){
   const corte=new Date();corte.setDate(corte.getDate()-dias);
   const filVtas=vtas.filter(v=>v.Fecha&&new Date(v.Fecha)>=corte);
   const filDtl=dtls.filter(d=>{const v=vtas.find(x=>x.ID===d.VentaID);return v&&v.Fecha&&new Date(v.Fecha)>=corte});
-
   const ing=filVtas.reduce((s,v)=>s+(+v.Total||0),0);
   const uds=filDtl.reduce((s,d)=>s+(+d.Cantidad||0),0);
   const tick=filVtas.length>0?ing/filVtas.length:0;
-
-  el("r-tvtas").textContent=filVtas.length;
-  el("r-tvtas-s").textContent=`últimos ${dias} días`;
-  el("r-ing").textContent=CFG.currency+fmt2(ing);
-  el("r-uds").textContent=uds;
-  el("r-tick").textContent=CFG.currency+fmt2(tick);
-
-  // Por día
-  const xDia={};
-  filVtas.forEach(v=>{const f=String(v.Fecha).substring(0,10);xDia[f]=(xDia[f]||0)+(+v.Total||0)});
-  const ds=Object.keys(xDia).sort();
-  mkChart("ch-dias","bar",ds,ds.map(d=>xDia[d]),"Ingresos Q","#c8506a",false);
-
-  // Por vendedor
+  el("r-tvtas").textContent=filVtas.length;el("r-tvtas-s").textContent=`últimos ${dias} días`;
+  el("r-ing").textContent=CFG.currency+fmt2(ing);el("r-uds").textContent=uds;el("r-tick").textContent=CFG.currency+fmt2(tick);
+  const xDia={};filVtas.forEach(v=>{const f=String(v.Fecha).substring(0,10);xDia[f]=(xDia[f]||0)+(+v.Total||0)});
+  const ds=Object.keys(xDia).sort();mkChart("ch-dias","bar",ds,ds.map(d=>xDia[d]),"Q","#c8506a",false);
   const xV={};filVtas.forEach(v=>{xV[v.Vendedor||"—"]=(xV[v.Vendedor||"—"]||0)+(+v.Total||0)});
   mkChart("ch-vend","doughnut",Object.keys(xV),Object.values(xV),"Q",null,true);
-
-  // Más vendidos
   const xP={};filDtl.forEach(d=>{xP[d.Producto||d.SKU]=(xP[d.Producto||d.SKU]||0)+(+d.Cantidad||0)});
   const top=Object.entries(xP).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  mkChart("ch-top","bar",top.map(e=>e[0].substring(0,20)),top.map(e=>e[1]),"Unidades","#3db88a",false);
-
-  // Por envío
+  mkChart("ch-top","bar",top.map(e=>e[0].substring(0,18)),top.map(e=>e[1]),"Uds","#3db88a",false);
   const xE={};filVtas.forEach(v=>{xE[v.TipoEnvio||"—"]=(xE[v.TipoEnvio||"—"]||0)+1});
   mkChart("ch-env","doughnut",Object.keys(xE),Object.values(xE),"Ventas",null,true);
 }
-
 const PAL=["#c8506a","#667eea","#3db88a","#e0923b","#9b59b6","#1abc9c","#e74c3c","#f39c12"];
 function mkChart(id,type,labels,data,label,color,pie){
   if(charts_[id])charts_[id].destroy();
   const ctx=document.getElementById(id).getContext("2d");
   charts_[id]=new Chart(ctx,{type,data:{labels,datasets:[{label,data,backgroundColor:pie?PAL:(color+"cc"),borderColor:pie?PAL:color,borderWidth:type==="bar"?0:2,borderRadius:type==="bar"?6:0,hoverOffset:8}]},options:{responsive:true,plugins:{legend:{display:pie}},scales:type==="bar"?{y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"}},x:{grid:{display:false}}}:{}}});
+}
+
+// ─── CARGA MASIVA CSV ─────────────────────────────────────
+function openModalCSV(){csvRows=[];el("csv-preview").style.display="none";el("btn-import-csv").style.display="none";el("csv-input").value="";el("modal-csv").style.display="flex"}
+function onCsvDrop(e){e.preventDefault();el("csv-area").classList.remove("drag");const f=e.dataTransfer.files[0];if(f&&f.name.endsWith(".csv"))procesarCSV(f);else alert("Solo se aceptan archivos .csv")}
+
+function descargarPlantilla(){
+  const header="SKU,Nombre,Categoria,Talla,Color,Medidas,Proveedor,Costo,PrecioVenta,StockActual,StockMinimo";
+  const ejemplo="SAN-NUDE-36,Sandalia Nude,Sandalias,36,Nude,,Colombia,150.00,320.00,5,2\nTAC-NEG-37,Tacon Negro,Tacones,37,Negro,Tacon 8cm,Colombia,200.00,420.00,3,1";
+  const blob=new Blob([header+"\n"+ejemplo],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="plantilla_sorelle.csv";a.click();
+}
+
+function procesarCSV(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split("\n").filter(l=>l.trim());
+    if(lines.length<2){alert("El CSV está vacío o sin datos");return}
+    const headers=lines[0].split(",").map(h=>h.trim());
+    csvRows=[];
+    const errors=[];
+    for(let i=1;i<lines.length;i++){
+      const vals=lines[i].split(",").map(v=>v.trim());
+      const row={};headers.forEach((h,j)=>row[h]=vals[j]||"");
+      if(!row.SKU||!row.Nombre){errors.push(`Fila ${i+1}: SKU y Nombre son requeridos`);continue}
+      csvRows.push(row);
+    }
+    // Mostrar preview
+    el("csv-preview").style.display="block";
+    el("csv-preview").innerHTML=`
+      <div style="font-weight:600;margin-bottom:8px">Vista previa: ${csvRows.length} productos${errors.length?` (${errors.length} filas con error)`:""}`;
+    if(errors.length)el("csv-preview").innerHTML+=`<div style="color:var(--rose);font-size:12px;margin:8px 0">${errors.join("<br>")}</div>`;
+    el("csv-preview").innerHTML+=`<div class="tw"><table class="t"><thead><tr><th>SKU</th><th>Nombre</th><th>Cat.</th><th>Talla</th><th>Color</th><th>Costo</th><th>P.Venta</th><th>Stock</th></tr></thead>
+      <tbody>${csvRows.slice(0,10).map(r=>`<tr><td><code style="font-size:11px">${r.SKU}</code></td><td>${r.Nombre}</td><td>${r.Categoria}</td><td>${r.Talla}</td><td>${r.Color||"—"}</td><td>Q ${r.Costo}</td><td>Q ${r.PrecioVenta}</td><td>${r.StockActual}</td></tr>`).join("")}</tbody></table></div>
+      ${csvRows.length>10?`<div style="font-size:12px;color:var(--mink);margin-top:8px">...y ${csvRows.length-10} más</div>`:""}`;
+    if(csvRows.length>0)el("btn-import-csv").style.display="flex";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+async function importarCSV(){
+  if(!csvRows.length)return;
+  showLo(`Importando 0/${csvRows.length}...`);
+  let ok=0;
+  try{
+    for(let i=0;i<csvRows.length;i++){
+      const r=csvRows[i];
+      showLo(`Importando ${i+1}/${csvRows.length}...`);
+      const vals=[r.SKU,r.Nombre,r.Categoria||"Otros",r.Talla||"36",r.Color||"",r.Medidas||"",
+        r.Proveedor||"",r.Ubicacion||"Bodega Principal",parseFloat(r.Costo)||0,parseFloat(r.PrecioVenta)||0,
+        parseInt(r.StockActual)||0,parseInt(r.StockMinimo)||3,"",true];
+      await addRow(TBL.prod,vals);
+      // Registrar entrada de stock si tiene
+      if(parseInt(r.StockActual)>0){
+        await addRow(TBL.mov,[Date.now().toString(),r.SKU,r.Nombre,"Entrada",parseInt(r.StockActual),new Date().toISOString().split("T")[0],me.name||"Admin",parseFloat(r.Costo)||0,0,"Carga masiva CSV"]);
+      }
+      ok++;
+    }
+    closeM("modal-csv");csvRows=[];
+    await refreshData();
+    alert(`✅ ${ok} productos importados exitosamente`);
+  }catch(e){hideLo();alert(`Error en fila ${ok+1}:\n${e.message}`)}
 }
 
 // ─── UI HELPERS ──────────────────────────────────────────
@@ -1077,13 +1006,12 @@ function goPage(name,btn){
 function openM(id){el(id).style.display="flex"}
 function closeM(id){el(id).style.display="none"}
 function bgClose(e,id){if(e.target.id===id)closeM(id)}
-function showLo(m){const e=el("lo");e.style.display="flex";el("lo-msg").textContent=m||"..."}
+function showLo(m){el("lo").style.display="flex";el("lo-msg").textContent=m||"..."}
 function hideLo(){el("lo").style.display="none"}
 function showErr(m){const d=el("login-err");d.style.display="block";d.textContent="❌ "+m}
 function el(id){return document.getElementById(id)}
 function fmt2(n){return(parseFloat(n)||0).toFixed(2)}
 function fmtDate(d){if(!d)return"—";try{return new Date(d).toLocaleDateString("es-GT",{day:"2-digit",month:"2-digit",year:"numeric"})}catch{return String(d).substring(0,10)}}
-function badgeMov(t){if(!t)return"";const m={"Entrada":"b-e","Salida":"b-s","Ajuste Positivo":"b-ap","Ajuste Negativo":"b-an"};return`<span class="b ${m[t]||"b-cat"}">${t}</span>`}
 function popSel(id,items,ph){const s=el(id);if(!s)return;const cur=s.value;s.innerHTML=`<option value="">${ph}</option>`;items.forEach(i=>s.add(new Option(i,i)));s.value=cur}
 </script>
 </body>
