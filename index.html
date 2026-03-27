@@ -2,8 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sorelle">
+<meta name="theme-color" content="#111118">
 <title>Sorelle · ERP</title>
+<link rel="manifest" id="pwa-manifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -207,12 +213,89 @@ table.t tbody tr:last-child{border-bottom:none}
 
 @media print{body *{visibility:hidden}#rcp,#rcp *{visibility:visible}
   #rcp{position:fixed;inset:0;background:#fff;padding:32px}}
-@media(max-width:900px){:root{--sw:0px}
-  #main{margin-left:0;padding:20px}.kg{grid-template-columns:1fr 1fr}
-  .cgrid,.dg2{grid-template-columns:1fr}}
+
+/* ── MOBILE MENU TOGGLE ── */
+#mob-bar{display:none;position:fixed;top:0;left:0;right:0;height:54px;
+  background:var(--ink);z-index:200;align-items:center;padding:0 16px;gap:12px}
+#mob-bar .mob-brand{font-family:var(--fd);font-size:1.4rem;font-weight:700;color:var(--rose);flex:1}
+#mob-menu-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:149}
+
+/* ── TABLET ── */
+@media(max-width:900px){
+  .kg{grid-template-columns:1fr 1fr}
+  .cgrid,.dg2{grid-template-columns:1fr}
+  .c3{grid-template-columns:1fr 1fr}
+  .c4{grid-template-columns:1fr 1fr}
+}
+
+/* ── MOBILE ── */
+@media(max-width:640px){
+  :root{--sw:224px}
+  /* Sidebar oculto por defecto en mobile */
+  #sidebar{transform:translateX(-224px);transition:transform .25s ease;box-shadow:none}
+  #sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.4)}
+  #sidebar-overlay.open{display:block}
+  #mob-bar{display:flex}
+  #app{display:block}
+  #main{margin-left:0;padding:70px 14px 80px}
+
+  /* Grids */
+  .kg{grid-template-columns:1fr 1fr;gap:10px}
+  .kv{font-size:1.6rem}.kc{padding:14px 12px}
+  .cgrid,.dg2{grid-template-columns:1fr}
+  .fr.c2,.fr.c3,.fr.c4{grid-template-columns:1fr}
+  .ph{flex-direction:column;align-items:flex-start;gap:8px}
+
+  /* Cards */
+  .card{border-radius:10px}
+  .frow{flex-direction:column;gap:8px;padding:12px}
+  .fg2{min-width:unset}
+
+  /* Venta: columnas en mobile */
+  #page-ventas>[style*="grid"]{display:flex;flex-direction:column;gap:14px}
+
+  /* Tablas: scroll horizontal */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.t{min-width:500px}
+  table.t thead th{font-size:10px;padding:8px 10px}
+  table.t tbody td{padding:9px 10px;font-size:12px}
+
+  /* Modal full-screen en mobile */
+  .mo{padding:0;align-items:flex-end}
+  .mb{border-radius:20px 20px 0 0;max-height:95vh}
+  .msm,.mmd,.mlg{max-width:100%}
+  .mhd{padding:18px 18px 0}
+  .mbd{padding:14px 18px}
+  .mft{padding:12px 18px 24px}
+
+  /* Cart sticky en mobile */
+  #page-ventas .card[style*="sticky"]{position:relative;top:0}
+
+  /* Bottom nav bar para mobile */
+  #mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:var(--ink);border-top:1px solid rgba(255,255,255,.1);
+    z-index:150;padding:6px 0 env(safe-area-inset-bottom,6px)}
+  .mob-ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:6px 4px;color:rgba(255,255,255,.45);font-size:10px;font-weight:500;
+    cursor:pointer;border:none;background:none;transition:color .15s}
+  .mob-ni i{font-size:20px}
+  .mob-ni.active{color:var(--rose)}
+}
+
+/* ── HIDE MOBILE NAV ON DESKTOP ── */
+#mob-nav{display:none}
 </style>
 </head>
 <body>
+
+<!-- MOBILE TOP BAR -->
+<div id="mob-bar">
+  <button id="mob-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+  <div class="mob-brand">Sorelle</div>
+  <button class="bg" onclick="refreshData()" style="border-color:rgba(255,255,255,.2);color:#fff;padding:6px 10px;font-size:12px"><i class="bi bi-arrow-clockwise"></i></button>
+</div>
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- LOADING -->
 <div id="lo"><div class="spin"></div><div id="lo-msg">Iniciando...</div></div>
@@ -460,6 +543,25 @@ table.t tbody tr:last-child{border-bottom:none}
     </div>
 
   </div><!-- /main -->
+  <!-- MOBILE BOTTOM NAV -->
+  <nav id="mob-nav">
+    <button class="mob-ni active" data-page="ventas" onclick="goPageMob(this)">
+      <i class="bi bi-receipt"></i>Venta
+    </button>
+    <button class="mob-ni" data-page="productos" onclick="goPageMob(this)">
+      <i class="bi bi-box-seam"></i>Productos
+    </button>
+    <button class="mob-ni" id="mob-historial" data-page="historial" onclick="goPageMob(this)">
+      <i class="bi bi-clock-history"></i>Historial
+    </button>
+    <button class="mob-ni" id="mob-reportes" data-page="reportes" onclick="goPageMob(this)">
+      <i class="bi bi-bar-chart-line"></i>Reportes
+    </button>
+    <button class="mob-ni" onclick="toggleSidebar()">
+      <i class="bi bi-three-dots"></i>Más
+    </button>
+  </nav>
+
 </div><!-- /app -->
 
 <!-- MODAL PRODUCTO -->
@@ -562,6 +664,10 @@ table.t tbody tr:last-child{border-bottom:none}
     <div class="mbd" id="m-vta-body"></div>
     <div class="mft">
       <button class="bg" onclick="closeM('m-vta')">Cerrar</button>
+      <button class="bg" id="btn-wsp" onclick="enviarWsp()" style="display:none;color:#25a244;border-color:#25a244">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#25a244"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        WhatsApp
+      </button>
       <button class="bp" onclick="printRcp()"><i class="bi bi-printer"></i>Imprimir</button>
     </div>
   </div>
@@ -717,6 +823,9 @@ function bootApp(){
   // Ocultar botones de productos para no-admins
   const prodBtns=g("prod-admin-btns");
   if(prodBtns)prodBtns.style.display=admin?"flex":"none";
+  // Ocultar items del bottom nav mobile para no-admins
+  const mobHist=g("mob-historial");if(mobHist)mobHist.style.display=admin?"":"none";
+  const mobRep=g("mob-reportes");if(mobRep)mobRep.style.display=admin?"":"none";
   // Si no es admin, ir directo a ventas al cargar
   if(!admin){
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -1051,7 +1160,7 @@ async function confirmarVenta(){
     const pago=g("v-pago").value;
     const notas=g("v-notas").value.trim();
 
-    const estadoInicial=envio==="Tienda"?"Entregado":"En Ruta";
+    const estadoInicial=envio==="Tienda"?"Entregado":"Recibido en bodega";
     await addRow(TBL.V,[id,fh,vnd,nit,nom,tel,dir,envio,pago,sub,env,tot,notas,estadoInicial]);
 
     showLo("Guardando detalle (2/4)...");
@@ -1122,6 +1231,14 @@ async function confirmarVenta(){
 
 function showRecibo(v){
   hideLo();
+  // Guardar datos de venta activa para WhatsApp
+  window._reciboActual=v;
+  // Mostrar botón WSP solo si hay teléfono del cliente
+  const btnWsp=g("btn-wsp");
+  if(btnWsp){
+    const telLimpio=String(v.tel||"").replace(/\D/g,"");
+    btnWsp.style.display=telLimpio.length>=7?"flex":"none";
+  }
   const html=`
     <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:14px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${CFG.store}</div>
@@ -1164,16 +1281,50 @@ function showRecibo(v){
 }
 function printRcp(){g("rcp").style.display="block";window.print();g("rcp").style.display="none"}
 
+function enviarWsp(){
+  const v=window._reciboActual;
+  if(!v){alert("No hay recibo activo");return}
+  // Limpiar teléfono — solo dígitos, agregar 502 si es número guatemalteco sin código
+  let tel=String(v.tel||"").replace(/\D/g,"");
+  if(tel.length===8)tel="502"+tel; // Guatemala sin código de país
+  if(!tel){alert("El cliente no tiene teléfono registrado");return}
+  // Construir mensaje de texto plano
+  const lineas=v.items.map(it=>`  • ${it.nom} T${it.tal} ×${it.q} = ${Q(it.sub)}`).join("\n");
+  const msg=[
+    `*${CFG.store}*`,
+    `*Recibo de Venta* — ${v.id}`,
+    `Fecha: ${fd(v.fh)}`,
+    `Cliente: ${v.nom}`,
+    v.nit&&v.nit!=="CF"?`NIT: ${v.nit}`:"",
+    v.dir?`Dirección: ${v.dir}`:"",
+    `Vendedor: ${v.vnd}`,
+    `Envío: ${v.envio} | Pago: ${v.pago}`,
+    "",
+    "*Detalle:*",
+    lineas,
+    "",
+    `Subtotal: ${Q(v.sub)}`,
+    v.env>0?`Envío: ${Q(v.env)}`:"",
+    `*TOTAL: ${Q(v.tot)}*`,
+    v.notas?`\nNotas: ${v.notas}`:"",
+    "\n_¡Gracias por tu compra!_ 🛍️"
+  ].filter(l=>l!==undefined&&l!==null&&l!=="").join("\n");
+  // Abrir WhatsApp — funciona en móvil (app nativa) y escritorio (WhatsApp Web)
+  const url=`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+  window.open(url,"_blank");
+}
+
 // ╔═══════════════════════════════════════════════╗
 // ║  HISTORIAL                                   ║
 // ╚═══════════════════════════════════════════════╝
 function trackBadge(estado){
   const map={
-    "En Ruta":    "background:#fff3cd;color:#856404",
-    "Entregado":  "background:#d4edda;color:#1a7a3a",
-    "No Recibió": "background:#fce4e8;color:#a02040"
+    "Recibido en bodega": "background:#d0e8ff;color:#1a4a8a",
+    "En Ruta":            "background:#fff3cd;color:#856404",
+    "Entregado":          "background:#d4edda;color:#1a7a3a",
+    "No Recibió":         "background:#fce4e8;color:#a02040"
   };
-  const st=estado||"En Ruta";
+  const st=estado||"Recibido en bodega";
   return `<span class="b" style="${map[st]||"background:#eee;color:#555"}">${st}</span>`;
 }
 
@@ -1199,7 +1350,8 @@ function renderHist(){
       <button onclick="verVenta('${v.ID}')" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:3px 6px;border-radius:6px;font-weight:600" title="Ver detalle"><i class="bi bi-eye"></i></button>
       ${admin&&v.EstadoEnvio!=="Entregado"?`
         <select onchange="cambiarEstado('${v.ID}',this.value,this)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--ink)" title="Cambiar estado">
-          <option value="">Estado...</option>
+          <option value="">Cambiar...</option>
+          <option value="Recibido en bodega" ${v.EstadoEnvio==="Recibido en bodega"?"selected":""}>Recibido en bodega</option>
           <option value="En Ruta" ${v.EstadoEnvio==="En Ruta"?"selected":""}>En Ruta</option>
           <option value="Entregado">Entregado</option>
           <option value="No Recibió">No Recibió</option>
@@ -1220,7 +1372,7 @@ async function cambiarEstado(ventaId, nuevoEstado, selectEl){
     const ok=confirm(
       `⚠️ Marcar como "No Recibió" devolverá el stock al inventario:\n\n${lista}\n\n¿Confirmar?`
     );
-    if(!ok){selectEl.value=v.EstadoEnvio||"En Ruta";return}
+    if(!ok){selectEl.value=v.EstadoEnvio||"Recibido en bodega";return}
   }
 
   showLo("Actualizando estado...");
@@ -1260,7 +1412,7 @@ async function cambiarEstado(ventaId, nuevoEstado, selectEl){
   }catch(e){
     hideLo();
     alert("Error al cambiar estado:\n"+e.message);
-    selectEl.value=v.EstadoEnvio||"En Ruta";
+    selectEl.value=v.EstadoEnvio||"Recibido en bodega";
   }
 }
 
@@ -1568,10 +1720,35 @@ function popSel(id,items,ph){const s=g(id);if(!s)return;const cur=s.value;s.inne
 function goPage(btn){
   const name=btn.dataset.page;
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  document.querySelectorAll(".ni").forEach(b=>b.classList.remove("active"));
-  g("page-"+name).classList.add("active");btn.classList.add("active");
+  document.querySelectorAll(".ni,.mob-ni").forEach(b=>b.classList.remove("active"));
+  g("page-"+name).classList.add("active");
+  btn.classList.add("active");
+  // Sincronizar bottom nav mobile
+  document.querySelectorAll(".mob-ni[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
+  document.querySelectorAll(".ni[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
+  if(name==="reportes")renderRep();
+  closeSidebar();
+}
+
+function goPageMob(btn){
+  const name=btn.dataset.page;
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".ni,.mob-ni").forEach(b=>b.classList.remove("active"));
+  g("page-"+name).classList.add("active");
+  document.querySelectorAll("[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
   if(name==="reportes")renderRep();
 }
+
+function toggleSidebar(){
+  const sb=g("sidebar"),ov=g("sidebar-overlay");
+  const open=sb.classList.toggle("open");
+  ov.classList.toggle("open",open);
+}
+function closeSidebar(){
+  g("sidebar").classList.remove("open");
+  g("sidebar-overlay").classList.remove("open");
+}
+
 function openM(id){g(id).style.display="flex"}
 function closeM(id){g(id).style.display="none"}
 function bgcl(e,id){if(e.target.id===id)closeM(id)}
@@ -1579,6 +1756,28 @@ function toast(msg,color){
   const t=g("toast");t.textContent=msg;t.style.background=color||"#333";
   t.style.opacity="1";clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity="0",4000);
 }
+
+// ── PWA MANIFEST (generado dinámicamente) ─────────────
+function installPWA(){
+  const manifest={
+    name:"Sorelle ERP",short_name:"Sorelle",
+    start_url:window.location.pathname,
+    display:"standalone",
+    background_color:"#111118",theme_color:"#c8506a",
+    orientation:"portrait-primary",
+    icons:[
+      {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111118'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' font-family='serif' fill='%23c8506a'>S</text></svg>",
+       sizes:"192x192",type:"image/svg+xml"},
+      {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111118'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' font-family='serif' fill='%23c8506a'>S</text></svg>",
+       sizes:"512x512",type:"image/svg+xml"}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const link=g("pwa-manifest");
+  if(link){link.href=url;}
+}
+installPWA();
 </script>
 </body>
 </html>
