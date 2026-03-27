@@ -666,8 +666,24 @@ async function signIn(){
 }
 
 async function getToken(){
-  try{tok=(await mApp.acquireTokenSilent({account:me,scopes:SCOPES})).accessToken}
-  catch{tok=(await mApp.acquireTokenPopup({account:me,scopes:SCOPES})).accessToken}
+  try{
+    tok=(await mApp.acquireTokenSilent({account:me,scopes:SCOPES})).accessToken;
+  }catch(e1){
+    try{
+      tok=(await mApp.acquireTokenPopup({account:me,scopes:SCOPES})).accessToken;
+    }catch(e2){
+      const msg=e2.message||"";
+      if(msg.includes("interaction_in_progress")){
+        // Limpiar estado MSAL y reiniciar
+        cleanMsal();mReady=false;mApp=null;
+        const app=await getMsal(true);
+        const r=await app.loginPopup({scopes:SCOPES,prompt:"select_account"});
+        me=r.account;tok=r.accessToken;
+      }else{
+        throw e2;
+      }
+    }
+  }
 }
 
 function signOut(){
@@ -816,8 +832,10 @@ async function refreshData(){
   g("data-err").style.display="none";
   showLo("Cargando datos...");
   try{
-    // Leer encabezados reales del Excel primero
-    showLo("Leyendo estructura...");
+    // Forzar token fresco — crítico en sesiones nuevas e incógnito
+    await getToken();
+
+    showLo("Leyendo estructura del Excel...");
     const [hP,hM,hC,hV,hD]=await Promise.all([
       getHeaders(TBL.P).catch(()=>CP),
       getHeaders(TBL.M).catch(()=>CM),
@@ -827,9 +845,25 @@ async function refreshData(){
     ]);
     realHeaders={P:hP.length?hP:CP,M:hM.length?hM:CM,C:hC.length?hC:CC,V:hV.length?hV:CV,D:hD.length?hD:CD};
 
-    showLo("Cargando datos...");
-    const [pr,mr,cr,vr,dr]=await Promise.all([
-      getRows(TBL.P).catch(()=>{throw new Error("Tabla 'Productos' no encontrada")}),
+    showLo("Cargando productos...");
+    // Leer tabla Productos primero y capturar error real
+    let pr;
+    try{pr=await getRows(TBL.P)}
+    catch(e){
+      const msg=e.message||"";
+      if(msg.includes("403")||msg.includes("Forbidden")||msg.includes("AccessDenied")){
+        throw new Error("Sin acceso al archivo Excel. Verifica que tu cuenta tenga permisos en SharePoint. ("+msg+")");
+      }else if(msg.includes("404")||msg.includes("NotFound")){
+        throw new Error("Archivo Excel no encontrado. Verifica que el fileId sea correcto. ("+msg+")");
+      }else if(msg.includes("ItemNotFound")||msg.includes("table")){
+        throw new Error("Tabla 'Productos' no encontrada en el Excel. Verifica que la tabla se llame exactamente 'Productos'. ("+msg+")");
+      }else{
+        throw new Error("Error al leer Productos: "+msg);
+      }
+    }
+
+    showLo("Cargando ventas y movimientos...");
+    const [mr,cr,vr,dr]=await Promise.all([
       getRows(TBL.M).catch(()=>[]),
       getRows(TBL.C).catch(()=>[]),
       getRows(TBL.V).catch(()=>[]),
@@ -845,6 +879,7 @@ async function refreshData(){
     hideLo();
     g("data-err-msg").textContent=e.message;
     g("data-err").style.display="block";
+    console.error("refreshData error:",e);
     return;
   }
   hideLo();
