@@ -621,7 +621,7 @@ async function updStock(prod,nuevoStock){
   const idx=actualIdx>=0?actualIdx:stockIdx;
   raw[idx]=nuevoStock;
   return updRow(TBL.prod,prod._i,raw);
-}}
+}
 
 // Subir imagen a OneDrive
 async function uploadImg(file,sku){
