@@ -872,10 +872,10 @@ function fillUI(){
 // ║  DASHBOARD                                   ║
 // ╚═══════════════════════════════════════════════╝
 function renderDash(){
-  const hoy=new Date().toISOString().split("T")[0];
+  const hoy=localDate();
   const mes=hoy.slice(0,7);
-  const vh=vtas.filter(v=>String(v.Fecha||"").startsWith(hoy));
-  const vm=vtas.filter(v=>String(v.Fecha||"").startsWith(mes));
+  const vh=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(hoy)});
+  const vm=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f.startsWith(mes)});
   const act=prods.filter(p=>p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE");
   const bajo=act.filter(p=>(+p.StockActual||0)<=(+p.StockMinimo||0));
   g("k1").textContent=vh.length;
@@ -959,7 +959,7 @@ async function confirmarVenta(){
   showLo("Guardando venta (1/4)...");
   try{
     const id="VTA-"+Date.now();
-    const fh=new Date().toISOString().split("T")[0];
+    const fh=localDate();
     const sub=snap.reduce((s,c)=>s+c.sub,0);
     const env=parseFloat(g("v-env").value)||0;
     const tot=sub+env;
@@ -1076,7 +1076,7 @@ function printRcp(){g("rcp").style.display="block";window.print();g("rcp").style
 function renderHist(){
   const fi=g("hfi").value,ff=g("hff").value,pg=g("hpago").value,vn=g("hvend").value.toLowerCase();
   const ls=vtas.filter(v=>{
-    const f=String(v.Fecha||"").slice(0,10);
+    const f=excelToDate(v.Fecha)||"";
     return(!fi||f>=fi)&&(!ff||f<=ff)&&(!pg||v.MetodoPago===pg)&&(!vn||(v.Vendedor||"").toLowerCase().includes(vn));
   });
   const tb=g("tb-hist");
@@ -1158,21 +1158,35 @@ function renderProds(){
 function openProd(idx=null){
   g("p-idx").value=idx!==null?idx:"";
   g("mp-tit").textContent=idx!==null?"Editar Producto":"Nuevo Producto";
-  g("img-preview").style.display="none";
-  if(idx!==null){
+  // Reset imagen preview safely
+  const prev=g("img-preview");if(prev)prev.style.display="none";
+  const prevEl=g("img-prev-el");if(prevEl)prevEl.src="";
+  // Limpiar campos primero
+  ["p-sku","p-nom","p-prov","p-cos","p-pvt","p-col","p-med","p-img-url"].forEach(id=>{const e=g(id);if(e)e.value=""});
+  g("p-stk").value="0";g("p-min").value="3";
+  // Valores por defecto de selects
+  try{g("p-cat").value="Sandalias"}catch(e){}
+  try{g("p-tal").value="36"}catch(e){}
+  try{g("p-ubic").value="Bodega Principal"}catch(e){}
+  if(idx!==null&&prods[idx]){
     const p=prods[idx];
-    g("p-sku").value=p.SKU||"";g("p-nom").value=p.Nombre||"";
-    g("p-cat").value=p.Categoria||"Sandalias";g("p-tal").value=String(p.Talla||"36");
-    g("p-ubic").value=p.Ubicacion||"Bodega Principal";
-    g("p-col").value=p.Color||"";g("p-med").value=p.Medidas||"";
-    g("p-prov").value=p.Proveedor||"";
-    g("p-cos").value=p.Costo||"";g("p-pvt").value=p.PrecioVenta||"";
-    g("p-stk").value=p.StockActual||"0";g("p-min").value=p.StockMinimo||"3";
-    g("p-img-url").value=p.ImagenURL||"";
-    if(p.ImagenURL)prevImgUrl(p.ImagenURL);
-  }else{
-    ["p-sku","p-nom","p-prov","p-cos","p-pvt","p-col","p-med","p-img-url"].forEach(id=>g(id).value="");
-    g("p-stk").value="0";g("p-min").value="3";
+    if(g("p-sku"))g("p-sku").value=String(p.SKU||"");
+    if(g("p-nom"))g("p-nom").value=String(p.Nombre||"");
+    if(g("p-col"))g("p-col").value=String(p.Color||"");
+    if(g("p-med"))g("p-med").value=String(p.Medidas||"");
+    if(g("p-prov"))g("p-prov").value=String(p.Proveedor||"");
+    if(g("p-cos"))g("p-cos").value=p.Costo||"";
+    if(g("p-pvt"))g("p-pvt").value=p.PrecioVenta||"";
+    if(g("p-stk"))g("p-stk").value=p.StockActual||"0";
+    if(g("p-min"))g("p-min").value=p.StockMinimo||"3";
+    // Selects — ignorar si el valor no está en las opciones
+    try{if(p.Categoria)g("p-cat").value=p.Categoria}catch(e){}
+    try{if(p.Talla)g("p-tal").value=String(p.Talla)}catch(e){}
+    try{if(p.Ubicacion)g("p-ubic").value=p.Ubicacion}catch(e){}
+    // Imagen
+    const imgUrl=String(p.ImagenURL||"");
+    if(g("p-img-url"))g("p-img-url").value=imgUrl;
+    if(imgUrl)prevImgUrl(imgUrl);
   }
   g("m-prod").style.display="flex";
 }
@@ -1206,7 +1220,7 @@ async function saveProd(){
       await addRow(TBL.P,vals);
       if(parseInt(g("p-stk").value)>0){
         await addRow(TBL.M,[Date.now()+"",sku,nom,"Entrada",parseInt(g("p-stk").value),
-          new Date().toISOString().split("T")[0],me.name||"Admin",parseFloat(g("p-cos").value)||0,0,"Stock inicial"]);
+          localDate(),me.name||"Admin",parseFloat(g("p-cos").value)||0,0,"Stock inicial"]);
       }
     }
     closeM("m-prod");await refreshData();
@@ -1219,7 +1233,7 @@ async function saveProd(){
 function renderMov(){
   const fi=g("mfi").value,ff=g("mff").value,tp=g("mtipo").value;
   const ls=movs.filter(m=>{
-    const f=String(m.Fecha||"").slice(0,10);
+    const f=excelToDate(m.Fecha)||"";
     return(!fi||f>=fi)&&(!ff||f<=ff)&&(!tp||m.Tipo===tp);
   });
   const tb=g("tb-mov");
@@ -1233,7 +1247,7 @@ function renderMov(){
     <td style="font-size:12px;color:var(--mink)">${m.Vendedor||"—"}</td>
     <td>${Q(m.PrecioUnit)}</td>
     <td style="font-weight:600">${Q(m.Total)}</td>
-    <td style="font-size:11px;color:var(--mink)">${m.RefVenta||"—"}</td>
+    <td style="font-size:11px;color:var(--mink)" title="ID de venta asociada">${m.RefVenta?`<span class="b bgy">${String(m.RefVenta).slice(0,12)}</span>`:"—"}</td>
   </tr>`).join("");
 }
 
@@ -1242,20 +1256,24 @@ function renderMov(){
 // ╚═══════════════════════════════════════════════╝
 function renderRep(){
   const d=parseInt(g("rep-per").value);
-  const corte=new Date();corte.setDate(corte.getDate()-d);
-  const fv=vtas.filter(v=>v.Fecha&&new Date(v.Fecha)>=corte);
-  const fd2=dtls.filter(d=>{const v=vtas.find(x=>x.ID===d.VentaID);return v&&new Date(v.Fecha)>=corte});
+  const corteStr=localDate();
+  const corteD=new Date(corteStr);corteD.setDate(corteD.getDate()-d);
+  const corteISO=corteD.toISOString().split("T")[0];
+  // Filtrar usando excelToDate para manejar seriales
+  const fv=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f>=corteISO});
+  const fd2=dtls.filter(dt=>{const v=vtas.find(x=>x.ID===dt.VentaID);if(!v)return false;const f=excelToDate(v.Fecha);return f&&f>=corteISO});
   const ing=fv.reduce((s,v)=>s+(+v.Total||0),0);
-  const uds=fd2.reduce((s,d)=>s+(+d.Cantidad||0),0);
+  const uds=fd2.reduce((s,dt)=>s+(+dt.Cantidad||0),0);
   g("r1").textContent=fv.length;g("r1s").textContent="últimos "+d+" días";
   g("r2").textContent=Q(ing);g("r3").textContent=uds;
   g("r4").textContent=Q(fv.length?ing/fv.length:0);
-  const xD={};fv.forEach(v=>{const f=String(v.Fecha||"").slice(0,10);xD[f]=(xD[f]||0)+(+v.Total||0)});
-  const dk=Object.keys(xD).sort();
-  mkC("ch1","bar",dk,dk.map(k=>xD[k]),"Q","#c8506a",false);
+  // Agrupar por fecha usando excelToDate
+  const xD={};fv.forEach(v=>{const f=excelToDate(v.Fecha)||"—";xD[f]=(xD[f]||0)+(+v.Total||0)});
+  const dk=Object.keys(xD).filter(k=>k!=="—").sort();
+  mkC("ch1","bar",dk.map(k=>fd(k)),dk.map(k=>xD[k]),"Q","#c8506a",false);
   const xV={};fv.forEach(v=>{xV[v.Vendedor||"—"]=(xV[v.Vendedor||"—"]||0)+(+v.Total||0)});
   mkC("ch2","doughnut",Object.keys(xV),Object.values(xV),"Q",null,true);
-  const xP={};fd2.forEach(d=>{xP[d.Producto||d.SKU]=(xP[d.Producto||d.SKU]||0)+(+d.Cantidad||0)});
+  const xP={};fd2.forEach(dt=>{xP[dt.Producto||dt.SKU]=(xP[dt.Producto||dt.SKU]||0)+(+dt.Cantidad||0)});
   const top=Object.entries(xP).sort((a,b)=>b[1]-a[1]).slice(0,6);
   mkC("ch3","bar",top.map(e=>e[0].slice(0,18)),top.map(e=>e[1]),"Uds","#3db88a",false);
   const xE={};fv.forEach(v=>{xE[v.TipoEnvio||"—"]=(xE[v.TipoEnvio||"—"]||0)+1});
@@ -1321,7 +1339,7 @@ async function importCSV(){
       await addRow(TBL.P,vals);
       if(parseInt(r.StockActual)>0){
         await addRow(TBL.M,[Date.now()+"",r.SKU,r.Nombre,"Entrada",parseInt(r.StockActual),
-          new Date().toISOString().split("T")[0],me.name||"Admin",parseFloat(r.Costo)||0,0,"CSV"]);
+          localDate(),me.name||"Admin",parseFloat(r.Costo)||0,0,"CSV"]);
       }
     }catch(e){hideLo();alert("Error en fila "+(i+1)+": "+e.message);return}
   }
@@ -1336,7 +1354,33 @@ async function importCSV(){
 function g(id){return document.getElementById(id)}
 function var_(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function Q(n){return CFG.cur+(parseFloat(n)||0).toFixed(2)}
-function fd(d){if(!d)return"—";try{return new Date(d).toLocaleDateString("es-GT",{day:"2-digit",month:"2-digit",year:"numeric"})}catch{return String(d).slice(0,10)}}
+// Convierte serial de Excel o string a "YYYY-MM-DD"
+function excelToDate(val){
+  if(!val&&val!==0)return null;
+  if(typeof val==="number"&&val>1){
+    // Serial de Excel: días desde 1900-01-01 (con bug de 1900 como bisiesto)
+    const d=new Date(Math.round((val-25569)*86400*1000));
+    return d.toISOString().split("T")[0];
+  }
+  if(typeof val==="string"&&val.length>=10)return val.slice(0,10);
+  return null;
+}
+
+// Fecha local (Guatemala) en formato YYYY-MM-DD — evita el problema de zona horaria
+function localDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function fd(d){
+  if(!d&&d!==0)return"—";
+  const s=excelToDate(d);
+  if(!s)return"—";
+  try{
+    const[y,m,dd]=s.split("-");
+    return`${dd}/${m}/${y}`;
+  }catch{return s}
+}
 function showLo(m){const e=g("lo");e.style.display="flex";if(m)g("lo-msg").textContent=m}
 function hideLo(){g("lo").style.display="none"}
 function popSel(id,items,ph){const s=g(id);if(!s)return;const cur=s.value;s.innerHTML=`<option value="">${ph}</option>`;items.forEach(i=>s.add(new Option(i,i)));s.value=cur}
