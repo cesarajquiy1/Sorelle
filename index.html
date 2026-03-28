@@ -404,13 +404,24 @@ table.t tbody tr:last-child{border-bottom:none}
           <div class="card">
             <div class="ch"><i class="bi bi-plus-circle" style="color:var(--rose)"></i> Agregar Producto</div>
             <div style="padding:18px">
-              <div class="fr c2" style="margin-bottom:10px">
-                <div class="fg" style="margin:0"><label class="fl">Producto</label>
-                  <select class="fc" id="v-prod" onchange="onProdSel()"><option value="">Seleccionar...</option></select></div>
-                <div class="fg" style="margin:0"><label class="fl">Cantidad</label>
-                  <input type="number" class="fc" id="v-cant" value="1" min="1"></div>
+              <!-- Búsqueda de producto -->
+              <div class="fg" style="margin-bottom:10px;position:relative">
+                <label class="fl">Buscar Producto</label>
+                <div style="position:relative">
+                  <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mink);font-size:14px;pointer-events:none"></i>
+                  <input class="fc" id="v-busq" placeholder="SKU, nombre o iniciales..." oninput="filtrarProds()" autocomplete="off"
+                    style="padding-left:34px" onfocus="mostrarResultados()" onblur="setTimeout(ocultarResultados,200)">
+                </div>
+                <!-- Dropdown de resultados -->
+                <div id="v-resultados" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border:1.5px solid var(--rose);border-top:none;border-radius:0 0 10px 10px;max-height:240px;overflow-y:auto;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
               </div>
-              <div id="v-info" style="display:none" class="ibox"></div>
+              <!-- Producto seleccionado -->
+              <div id="v-info" style="display:none" class="ibox" style="margin-bottom:10px"></div>
+              <input type="hidden" id="v-prod">
+              <div class="fg" style="margin:0 0 10px">
+                <label class="fl">Cantidad</label>
+                <input type="number" class="fc" id="v-cant" value="1" min="1">
+              </div>
               <button class="bp" style="width:100%;justify-content:center" onclick="addCart()">
                 <i class="bi bi-cart-plus"></i>Agregar al carrito</button>
             </div>
@@ -1028,15 +1039,15 @@ async function api(method,path,body){
 }
 
 async function getRows(tbl){
-  const d=await api("GET",`/tables/${tbl}/rows`);
+  // Ruta con hoja explícita — cada tabla vive en su propia hoja del mismo nombre
+  const d=await api("GET",`/worksheets/${encodeURIComponent(tbl)}/tables/${encodeURIComponent(tbl)}/rows`);
   return d?.value||[];
 }
 
-// toObjs guarda _raw para actualizaciones seguras
 // Obtener encabezados reales de una tabla
 async function getHeaders(tbl){
   try{
-    const d=await api("GET",`/tables/${tbl}/headerRowRange`);
+    const d=await api("GET",`/worksheets/${encodeURIComponent(tbl)}/tables/${encodeURIComponent(tbl)}/headerRowRange`);
     if(d&&d.values&&d.values[0])return d.values[0].map(h=>String(h).trim());
   }catch(e){console.warn("No se pudieron leer headers de",tbl,e.message)}
   return [];
@@ -1064,12 +1075,12 @@ function toRaw(obj,hdrs,newVals){
 }
 
 async function addRow(tbl,vals){
-  return api("POST",`/tables/${tbl}/rows/add`,{values:[vals]});
+  return api("POST",`/worksheets/${encodeURIComponent(tbl)}/tables/${encodeURIComponent(tbl)}/rows/add`,{values:[vals]});
 }
 
 // updRaw actualiza fila usando los valores originales — evita error de dimensiones
 async function updRaw(tbl,idx,raw){
-  return api("PATCH",`/tables/${tbl}/rows/$/itemAt(index=${idx})`,{values:[raw]});
+  return api("PATCH",`/worksheets/${encodeURIComponent(tbl)}/tables/${encodeURIComponent(tbl)}/rows/$/itemAt(index=${idx})`,{values:[raw]});
 }
 
 // Actualiza solo el stock usando la posición real de la columna
@@ -1256,20 +1267,14 @@ async function refreshData(){
 }
 
 function fillUI(){
-  // Filtros de categoría y talla
   const cats=[...new Set(prods.map(p=>p.Categoria).filter(Boolean))];
   const talls=[...new Set(prods.map(p=>String(p.Talla)).filter(Boolean))].sort((a,b)=>+a-+b);
   popSel("f-cat",cats,"Todas las categorías");
   popSel("f-tal",talls,"Todas las tallas");
-  // Dropdown de productos en venta
-  const vsel=g("v-prod");
-  vsel.innerHTML='<option value="">Seleccionar producto...</option>';
-  prods.forEach((p,i)=>{
-    if(+p.StockActual>0){
-      const o=new Option(`${p.SKU} · ${p.Nombre} (T${p.Talla}${p.Color?", "+p.Color:""}) — Stock: ${p.StockActual}`,i);
-      vsel.appendChild(o);
-    }
-  });
+  // Limpiar buscador de venta al recargar
+  const vb=g("v-busq");if(vb)vb.value="";
+  const vp=g("v-prod");if(vp)vp.value="";
+  const vi=g("v-info");if(vi)vi.style.display="none";
   renderDash();renderProds();renderCli();renderHist();renderMov();
 }
 
@@ -1332,6 +1337,61 @@ function renderDash(){
 // ╔═══════════════════════════════════════════════╗
 // ║  VENTAS                                      ║
 // ╚═══════════════════════════════════════════════╝
+// ── BUSCADOR DE PRODUCTOS EN VENTA ───────────────────────
+function filtrarProds(){
+  const q=(g("v-busq").value||"").toLowerCase().trim();
+  const res=g("v-resultados");
+  if(!q){res.style.display="none";return}
+  const matches=prods.filter(p=>{
+    if(+p.StockActual<=0)return false;
+    const sku=String(p.SKU||"").toLowerCase();
+    const nom=String(p.Nombre||"").toLowerCase();
+    const col=String(p.Color||"").toLowerCase();
+    // Buscar por SKU exacto, nombre, iniciales o color
+    return sku.includes(q)||nom.includes(q)||col.includes(q)||
+      nom.split(" ").some(w=>w.startsWith(q));
+  }).slice(0,12); // máximo 12 resultados visibles
+  if(!matches.length){
+    res.style.display="block";
+    res.innerHTML=`<div style="padding:12px 14px;color:var(--mink);font-size:13px">Sin resultados para "<b>${g("v-busq").value}</b>"</div>`;
+    return;
+  }
+  res.style.display="block";
+  res.innerHTML=matches.map((p,i)=>`
+    <div onmousedown="seleccionarProd(${p._i})"
+      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .1s"
+      onmouseover="this.style.background='var(--bone)'" onmouseout="this.style.background=''">
+      ${p.ImagenURL?`<img src="${p.ImagenURL}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:32px;height:32px;border-radius:6px;background:var(--rose-lt);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-image" style="color:var(--rose);font-size:14px"></i></div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.Nombre}</div>
+        <div style="font-size:11px;color:var(--mink)">${p.SKU}${p.Color?" · "+p.Color:""} · Talla ${p.Talla}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-weight:700;font-size:13px;color:var(--rose)">${Q(p.PrecioVenta)}</div>
+        <div style="font-size:10px;color:var(--mink)">Stock: ${p.StockActual}</div>
+      </div>
+    </div>`).join("");
+}
+
+function seleccionarProd(idx){
+  const p=prods[idx];
+  g("v-prod").value=idx;
+  g("v-busq").value=`${p.SKU} · ${p.Nombre} (T${p.Talla})`;
+  g("v-resultados").style.display="none";
+  // Mostrar info del producto seleccionado
+  const inf=g("v-info");
+  inf.style.display="block";
+  inf.innerHTML=`<b>${p.Nombre}</b> | Talla <b>${p.Talla}</b>${p.Color?" | "+p.Color:""} | Stock: <b>${p.StockActual}</b> | P.Venta: <b>${Q(p.PrecioVenta)}</b>`;
+}
+
+function mostrarResultados(){
+  if(g("v-busq").value)filtrarProds();
+}
+function ocultarResultados(){
+  g("v-resultados").style.display="none";
+}
+
+// Mantener compatibilidad con código existente
 function onProdSel(){
   const i=g("v-prod").value;const inf=g("v-info");
   if(!i){inf.style.display="none";return}
@@ -1346,7 +1406,10 @@ function addCart(){
   if(tot>(+p.StockActual||0)){alert("Stock insuficiente. Disponible: "+p.StockActual);return}
   if(ix>=0){cart[ix].q+=q;cart[ix].sub=cart[ix].q*cart[ix].pv}
   else cart.push({idx:+i,sku:p.SKU,nom:p.Nombre,tal:p.Talla,q,pv:+p.PrecioVenta||0,sub:(+p.PrecioVenta||0)*q});
-  g("v-prod").value="";g("v-cant").value="1";g("v-info").style.display="none";
+  g("v-prod").value="";
+  g("v-busq").value="";
+  g("v-cant").value="1";
+  g("v-info").style.display="none";
   renderCart();
 }
 function renderCart(){
