@@ -492,7 +492,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <div class="card">
         <div class="frow"><input class="fc" id="q-cli" placeholder="🔍 Buscar NIT o nombre..." oninput="renderCli()" style="flex:1"></div>
         <div class="tw"><table class="t">
-          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Ventas</th></tr></thead>
+          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th># Ventas</th><th>Monto Total</th></tr></thead>
           <tbody id="tb-cli"></tbody>
         </table></div>
       </div>
@@ -831,7 +831,7 @@ const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVenta
 // Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","RefVenta"];
-const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas"];
+const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas","MontoTotal"];
 const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
@@ -1478,17 +1478,20 @@ async function confirmarVenta(){
       const ci=esCF
         ?clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
         :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
+      // Detectar si la tabla tiene la columna MontoTotal (6 cols) o no (5 cols)
+      const tieneMontoTotal=realHeaders.C&&realHeaders.C.includes("MontoTotal");
       if(ci<0){
-        // Nuevo cliente — enviar exactamente 5 valores, siempre
-        await addRow(TBL.C,[nit||"CF", nom, tel||"", dir||"", 1]);
+        // Nuevo cliente
+        const cVals=[nit||"CF", nom, tel||"", dir||"", 1];
+        if(tieneMontoTotal)cVals.push(+tot||0);
+        await addRow(TBL.C,cVals);
       }else{
         const c=clis[ci];
-        // Actualizar usando posiciones fijas de CC — más seguro que buscar por nombre
         const raw=[...c._raw];
-        // pos 0=NIT, 1=Nombre, 2=Telefono, 3=Direccion, 4=TotalVentas
         if(raw.length>2&&!raw[2])raw[2]=tel||"";
         if(raw.length>3&&!raw[3])raw[3]=dir||"";
         if(raw.length>4)raw[4]=(+raw[4]||0)+1;
+        if(tieneMontoTotal&&raw.length>5)raw[5]=(+raw[5]||0)+(+tot||0);
         await updRaw(TBL.C,c._i,raw);
       }
     }catch(e){
@@ -2024,13 +2027,14 @@ function renderCli(){
   const q=(g("q-cli").value||"").toLowerCase();
   const ls=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
   const tb=g("tb-cli");
-  if(!ls.length){tb.innerHTML=`<tr><td colspan="5"><div class="empty"><i class="bi bi-people"></i>Sin clientes — se registran automáticamente al confirmar ventas</div></td></tr>`;return}
+  if(!ls.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="bi bi-people"></i>Sin clientes — se registran automáticamente al confirmar ventas</div></td></tr>`;return}
   tb.innerHTML=ls.map(c=>`<tr>
     <td><code style="font-size:12px">${c.NIT}</code></td>
     <td style="font-weight:500">${c.Nombre}</td>
     <td style="color:var(--mink)">${c.Telefono||"—"}</td>
     <td style="font-size:12px;color:var(--mink)">${c.Direccion||"—"}</td>
     <td style="text-align:center"><span class="b bc">${c.TotalVentas||0}</span></td>
+    <td style="font-weight:600">${Q(c.MontoTotal||0)}</td>
   </tr>`).join("");
 }
 
