@@ -359,7 +359,14 @@ table.t tbody tr:last-child{border-bottom:none}
       </div>
       <div class="dg2">
         <div class="card"><div class="ch">Últimas Ventas</div><div id="dash-vtas"></div></div>
-        <div class="card"><div class="ch">Alertas de Stock</div><div id="dash-stock"></div></div>
+      <div class="card">
+  <div class="ch">Alertas de Stock
+    <button class="bg" onclick="exportarStockBajo()" style="padding:6px 12px;font-size:12px">
+      <i class="bi bi-file-earmark-excel"></i>Exportar pedido
+    </button>
+  </div>
+  <div id="dash-stock"></div>
+</div>
       </div>
     </div>
 
@@ -1868,6 +1875,35 @@ function renderCorte(){
 }
 
 // ── EXPORTAR A EXCEL ──────────────────────────────────────
+function exportarStockBajo(){
+  const act=prods.filter(p=>p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE");
+  const bajo=act.filter(p=>(+p.StockActual||0)<=(+p.StockMinimo||0));
+  if(!bajo.length){toast("✅ No hay productos con stock bajo en este momento","#3db88a");return}
+  const rows=[
+    ["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Stock Actual","Stock Mínimo","Unidades a Pedir","Precio Costo","Total Estimado"]
+  ];
+  bajo.forEach(p=>{
+    const aPedir=Math.max(0,(+p.StockMinimo||0)*3-(+p.StockActual||0));
+    rows.push([
+      p.SKU||"",p.Nombre||"",p.Categoria||"",p.Talla||"",
+      p.Color||"",p.Medidas||"",p.Proveedor||"",
+      +p.StockActual||0,+p.StockMinimo||0,
+      aPedir,+p.Costo||0,
+      aPedir*(+p.Costo||0)
+    ]);
+  });
+  // Fila de total
+  const totalEst=rows.slice(1).reduce((s,r)=>s+(+r[11]||0),0);
+  rows.push(["","","","","","","","","","","TOTAL ESTIMADO",totalEst]);
+
+  const bom="\uFEFF";
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([bom+csv],{type:"text/csv;charset=utf-8;"}));
+  a.download=`Sorelle_Pedido_${localDate()}.csv`;
+  a.click();
+  toast(`📦 Pedido exportado — ${bajo.length} productos con stock bajo`,"#3db88a");
+}
 function exportarVentas(){
   const fi=g("hfi").value,ff=g("hff").value;
   const filtradas=vtas.filter(v=>{
