@@ -1474,10 +1474,14 @@ async function confirmarVenta(){
 
     showLo("Guardando cliente (4/4)...");
     try{
-      const esCF=!nit||nit.toUpperCase()==="CF";
-      const ci=esCF
-        ?clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
-        :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
+     const esCF=!nit||nit.toUpperCase()==="CF";
+const ci=esCF
+  ?clis.findIndex(c=>{
+    const mismoTel=tel&&String(c.Telefono||"").replace(/\D/g,"")===tel.replace(/\D/g,"");
+    const mismoNombre=String(c.Nombre||"").toLowerCase()===nom.toLowerCase();
+    return mismoTel||mismoNombre;
+  })
+  :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
       // Detectar si la tabla tiene la columna MontoTotal (6 cols) o no (5 cols)
       const tieneMontoTotal=realHeaders.C&&realHeaders.C.includes("MontoTotal");
       if(ci<0){
