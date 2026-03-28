@@ -2299,23 +2299,59 @@ function parseCSV(f){
 }
 async function importCSV(){
   if(!csvRows.length)return;
+  let actualizados=0,nuevos=0;
   for(let i=0;i<csvRows.length;i++){
     showLo(`Importando ${i+1}/${csvRows.length}...`);
     const r=csvRows[i];
-    const vals=[r.SKU,r.Nombre,r.Categoria||"Otros",r.Talla||"36",r.Color||"",r.Medidas||"",
-      r.Proveedor||"","Bodega Principal",parseFloat(r.Costo)||0,parseFloat(r.PrecioVenta)||0,
-      parseInt(r.StockActual)||0,parseInt(r.StockMinimo)||3,"",true];
+    const skuCSV=(r.SKU||"").trim().toUpperCase();
+    const tallaCSV=String(r.Talla||"").trim();
+    const cantNueva=parseInt(r.StockActual)||0;
+    const costoNuevo=parseFloat(r.Costo)||0;
     try{
-      await addRow(TBL.P,vals);
-      if(parseInt(r.StockActual)>0){
-        await addRow(TBL.M,[Date.now()+"",r.SKU,r.Nombre,"Entrada",parseInt(r.StockActual),
-          localDate(),me.name||"Admin",parseFloat(r.Costo)||0,0,"CSV"]);
+      // Buscar si SKU+Talla ya existe
+      const existe=prods.find(p=>
+        String(p.SKU||"").trim().toUpperCase()===skuCSV&&
+        String(p.Talla||"").trim()===tallaCSV
+      );
+      if(existe){
+        // ── UPSERT: sumar stock y calcular costo promedio ponderado ──
+        const stockViejo=+existe.StockActual||0;
+        const costoViejo=+existe.Costo||0;
+        const stockNuevo=stockViejo+cantNueva;
+        const costoPromedio=stockNuevo>0
+          ?((stockViejo*costoViejo)+(cantNueva*costoNuevo))/stockNuevo
+          :costoNuevo;
+        const raw=[...existe._raw];
+        const hdrs=realHeaders.P.length?realHeaders.P:CP;
+        const si=hdrs.indexOf("StockActual");
+        const ci=hdrs.indexOf("Costo");
+        if(si>=0&&si<raw.length)raw[si]=stockNuevo;
+        if(ci>=0&&ci<raw.length)raw[ci]=+costoPromedio.toFixed(2);
+        await updRaw(TBL.P,existe._i,raw);
+        if(cantNueva>0){
+          await addRow(TBL.M,[Date.now()+"",existe.SKU,existe.Nombre,"Entrada",
+            cantNueva,localDate(),me.name||"Admin",costoNuevo,
+            cantNueva*costoNuevo,"Reposición CSV"]);
+        }
+        actualizados++;
+      }else{
+        // ── INSERT: producto nuevo ──
+        const vals=[r.SKU,r.Nombre,r.Categoria||"Otros",r.Talla||"36",r.Color||"",r.Medidas||"",
+          r.Proveedor||"","Bodega Principal",costoNuevo,parseFloat(r.PrecioVenta)||0,
+          cantNueva,parseInt(r.StockMinimo)||3,"",true];
+        await addRow(TBL.P,vals);
+        if(cantNueva>0){
+          await addRow(TBL.M,[Date.now()+"",r.SKU,r.Nombre,"Entrada",
+            cantNueva,localDate(),me.name||"Admin",costoNuevo,
+            cantNueva*costoNuevo,"Stock inicial CSV"]);
+        }
+        nuevos++;
       }
-    }catch(e){hideLo();alert("Error en fila "+(i+1)+": "+e.message);return}
+    }catch(e){hideLo();alert(`Error en fila ${i+1} (${r.SKU}):\n${e.message}`);return}
   }
   closeM("m-csv");csvRows=[];
   await refreshData();
-  toast("✅ "+csvRows.length+" productos importados",var_("--green"));
+  toast(`✅ ${actualizados+nuevos} productos — ${actualizados} actualizados · ${nuevos} nuevos`,"#3db88a");
 }
 
 // ╔═══════════════════════════════════════════════╗
