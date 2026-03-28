@@ -441,7 +441,23 @@ table.t tbody tr:last-child{border-bottom:none}
 
     <!-- HISTORIAL -->
     <div id="page-historial" class="page">
-      <div class="ph"><div class="pt">Historial de Ventas</div></div>
+      <div class="ph">
+        <div class="pt">Historial de Ventas</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="bg" onclick="toggleCorte()" id="btn-corte"><i class="bi bi-calendar-day"></i>Corte del Día</button>
+          <button class="bg" onclick="exportarVentas()"><i class="bi bi-file-earmark-excel"></i>Exportar Excel</button>
+        </div>
+      </div>
+      <!-- CORTE DIARIO -->
+      <div id="panel-corte" style="display:none;margin-bottom:16px">
+        <div class="card">
+          <div class="card-h" style="background:var(--ink);color:#fff">
+            <span><i class="bi bi-calendar-check" style="color:var(--rose)"></i> Corte del Día — <span id="corte-fecha"></span></span>
+            <span id="corte-total" style="font-family:var(--fd);font-size:1.3rem;color:var(--rose)"></span>
+          </div>
+          <div id="corte-body" style="padding:16px"></div>
+        </div>
+      </div>
       <div class="card">
         <div class="frow">
           <div class="fg2"><input type="date" class="fc" id="hfi" onchange="renderHist()"></div>
@@ -515,11 +531,14 @@ table.t tbody tr:last-child{border-bottom:none}
     <div id="page-reportes" class="page">
       <div class="ph">
         <div class="pt">Reportes</div>
-        <select class="fc" id="rep-per" onchange="renderRep()" style="width:180px">
-          <option value="7">Últimos 7 días</option>
-          <option value="30" selected>Últimos 30 días</option>
-          <option value="90">Últimos 90 días</option>
-        </select>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="fc" id="rep-per" onchange="renderRep()" style="width:160px">
+            <option value="7">Últimos 7 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+          <button class="bg" onclick="exportarVentas()"><i class="bi bi-file-earmark-excel"></i>Exportar</button>
+        </div>
       </div>
       <div class="kg" style="margin-bottom:18px">
         <div class="kc c1"><div class="kl">Total Ventas</div><div class="kv" id="r1">—</div><div class="ks" id="r1s"></div></div>
@@ -729,6 +748,45 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL ARCHIVO MENSUAL -->
+<div id="m-archivo" class="mo" onclick="bgcl(event,'m-archivo')" style="display:none">
+  <div class="mb mmd">
+    <div class="mhd">
+      <div class="mti" style="color:var(--purple)">📦 Archivo Mensual</div>
+      <button class="bx" onclick="closeM('m-archivo')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div style="background:#f0ecff;border:1px solid #c8bfee;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#5b3b8a;line-height:1.7">
+        <b>¿Qué hace este proceso?</b><br>
+        1. Guarda una copia de las 5 tablas en OneDrive → <code style="background:rgba(0,0,0,.08);padding:1px 5px;border-radius:4px">Sorelle-Archivos/</code><br>
+        2. El archivo se llama: <b id="archivo-filename">DataMesEnero2026</b>.csv<br>
+        3. <span style="color:#a02040;font-weight:600">Después de guardar</span>, deberás limpiar las tablas del Excel manualmente para el nuevo mes.
+      </div>
+      <div style="background:var(--bone);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--mink);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.7px">Mes a archivar</div>
+        <div style="font-family:var(--fd);font-size:1.6rem;font-weight:700;color:var(--ink)" id="archivo-mes-label">Enero 2026</div>
+      </div>
+      <div id="archivo-progreso" style="display:none;background:var(--bone);border-radius:10px;padding:14px 16px;font-size:13px">
+        <div id="archivo-prog-msg" style="color:var(--mink);margin-bottom:8px">Preparando...</div>
+        <div style="background:#e4ddd4;border-radius:20px;height:6px;overflow:hidden">
+          <div id="archivo-prog-bar" style="background:var(--purple);height:100%;width:0%;transition:width .3s;border-radius:20px"></div>
+        </div>
+      </div>
+      <div id="archivo-ok" style="display:none;background:#d4edda;border:1px solid #a0d8b4;border-radius:10px;padding:14px 16px;font-size:13px;color:#1a6a40">
+        <b>✅ Archivo guardado exitosamente en OneDrive</b><br>
+        <span id="archivo-ok-path" style="font-size:12px;opacity:.8"></span><br><br>
+        <b style="color:#a02040">Próximo paso:</b> Abre el Excel y borra las filas de datos de las tablas Ventas, DetalleVentas, Movimientos y Clientes para empezar el nuevo mes limpio. La tabla Productos no se limpia.
+      </div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-archivo')">Cerrar</button>
+      <button class="bp" id="btn-archivar" style="background:var(--purple)" onclick="ejecutarArchivo()">
+        <i class="bi bi-cloud-upload"></i>Guardar en OneDrive
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Cargar dependencias dinámicamente ──────────────────────
 function ldScr(src){return new Promise((ok,err)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=err;document.head.appendChild(s)})}
@@ -870,19 +928,15 @@ function bootApp(){
   g("v-vend").value=name;
   g("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
 
-  // Aplicar rol — ocultar secciones según permisos
   const admin=isAdmin();
   ["nav-historial","nav-clientes","nav-movimientos","nav-reportes",
    "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
     const e=g(id);if(e)e.style.display=admin?"":"none";
   });
-  // Ocultar botones de productos para no-admins
   const prodBtns=g("prod-admin-btns");
   if(prodBtns)prodBtns.style.display=admin?"flex":"none";
-  // Ocultar items del bottom nav mobile para no-admins
   const mobHist=g("mob-historial");if(mobHist)mobHist.style.display=admin?"":"none";
   const mobRep=g("mob-reportes");if(mobRep)mobRep.style.display=admin?"":"none";
-  // Si no es admin, ir directo a ventas al cargar
   if(!admin){
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".ni").forEach(b=>b.classList.remove("active"));
@@ -890,8 +944,65 @@ function bootApp(){
     const btnV=document.querySelector('.ni[data-page="ventas"]');
     if(btnV)btnV.classList.add("active");
   }
+  // Alerta de fin de mes — solo admins
+  if(admin)verificarFinMes();
   refreshData();
 }
+
+function verificarFinMes(){
+  const hoy=new Date();
+  const ultimoDia=new Date(hoy.getFullYear(),hoy.getMonth()+1,0).getDate();
+  if(hoy.getDate()!==ultimoDia)return;
+  // Verificar si ya se mostró hoy
+  const key=`sorelle_archivado_${hoy.getFullYear()}_${hoy.getMonth()+1}`;
+  if(sessionStorage.getItem(key))return;
+  // Mostrar banner de alerta
+  setTimeout(()=>{
+    const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                 "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const mes=meses[hoy.getMonth()];
+    const banner=document.createElement("div");
+    banner.id="banner-fin-mes";
+    banner.style.cssText=`position:fixed;top:0;left:0;right:0;z-index:9990;
+      background:linear-gradient(135deg,#c8506a,#7c6cd1);color:#fff;
+      padding:16px 20px;display:flex;align-items:center;gap:14px;
+      box-shadow:0 4px 24px rgba(0,0,0,.3);animation:fadeUp .4s ease`;
+    banner.innerHTML=`
+      <div style="font-size:28px">📅</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:15px">Fin de mes — Archivo de datos</div>
+        <div style="font-size:13px;opacity:.9;margin-top:2px">
+          Hoy es el último día de <b>${mes}</b>. Recuerda guardar el archivo mensual en OneDrive antes de mañana.
+        </div>
+      </div>
+      <button onclick="abrirArchivoMensual()" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:10px;color:#fff;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">
+        Archivar ahora
+      </button>
+      <button onclick="cerrarBannerMes()" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;padding:4px 8px">✕</button>`;
+    document.body.prepend(banner);
+    // Ajustar main para no quedar debajo del banner
+    const main=g("main");if(main)main.style.paddingTop=(parseInt(main.style.paddingTop||"70")+60)+"px";
+  },1500);
+}
+
+function cerrarBannerMes(){
+  const b=g("banner-fin-mes");if(b)b.remove();
+  const main=g("main");if(main)main.style.paddingTop="";
+}
+
+function abrirArchivoMensual(){
+  cerrarBannerMes();
+  g("m-archivo").style.display="flex";
+  // Mostrar mes a archivar
+  const hoy=new Date();
+  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const mes=meses[hoy.getMonth()];
+  const anio=hoy.getFullYear();
+  g("archivo-mes-label").textContent=`${mes} ${anio}`;
+  g("archivo-filename").textContent=`DataMes${mes}${anio}`;
+}
+
 
 function showLogin(){g("login-screen").style.display="flex"}
 function showErr(m){const d=g("err-box");d.style.display="block";d.textContent="❌ "+m}
@@ -1300,39 +1411,31 @@ async function confirmarVenta(){
 
     showLo("Guardando cliente (4/4)...");
     try{
-      // Usar CC como fallback si no se leyeron headers reales
-      const hdrsC=(realHeaders.C&&realHeaders.C.length>=3)?realHeaders.C:CC;
-      console.log("Headers Clientes:",hdrsC,"| NIT:",nit,"| Nombre:",nom);
-
       const esCF=!nit||nit.toUpperCase()==="CF";
       const ci=esCF
         ?clis.findIndex(c=>String(c.Nombre||"").toLowerCase()===nom.toLowerCase())
         :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
-
       if(ci<0){
-        // Nuevo cliente — siempre enviar exactamente CC.length valores
-        // independiente de los headers reales para evitar desalineación
-        const cVals=[nit||"CF", nom, tel||"", dir||"", 1];
-        // Si headers reales tienen más columnas, rellenar con vacío
-        while(cVals.length<hdrsC.length)cVals.push("");
-        // Si headers tienen menos, recortar
-        const cFinal=cVals.slice(0,hdrsC.length);
-        console.log("Guardando cliente nuevo:",cFinal);
-        await addRow(TBL.C,cFinal);
+        // Nuevo cliente — enviar exactamente 5 valores, siempre
+        await addRow(TBL.C,[nit||"CF", nom, tel||"", dir||"", 1]);
       }else{
-        const c=clis[ci];const raw=[...c._raw];
-        const ti=hdrsC.indexOf("Telefono"),di=hdrsC.indexOf("Direccion"),vi=hdrsC.indexOf("TotalVentas");
-        if(ti>=0&&ti<raw.length&&!raw[ti])raw[ti]=tel||"";
-        if(di>=0&&di<raw.length&&!raw[di])raw[di]=dir||"";
-        if(vi>=0&&vi<raw.length)raw[vi]=(+raw[vi]||0)+1;
-        else if(raw.length>4)raw[4]=(+raw[4]||0)+1; // fallback posición 4
-        console.log("Actualizando cliente existente idx:",c._i);
+        const c=clis[ci];
+        // Actualizar usando posiciones fijas de CC — más seguro que buscar por nombre
+        const raw=[...c._raw];
+        // pos 0=NIT, 1=Nombre, 2=Telefono, 3=Direccion, 4=TotalVentas
+        if(raw.length>2&&!raw[2])raw[2]=tel||"";
+        if(raw.length>3&&!raw[3])raw[3]=dir||"";
+        if(raw.length>4)raw[4]=(+raw[4]||0)+1;
         await updRaw(TBL.C,c._i,raw);
       }
-      // cliente guardado
     }catch(e){
-      console.error("❌ Error guardando cliente:",e.message,e);
-      setTimeout(()=>toast("⚠️ Cliente no guardado: "+e.message,"#e0923b"),500);
+      // Error persistente — no desaparece hasta que el usuario lo cierra
+      const errDiv=document.createElement("div");
+      errDiv.style.cssText="position:fixed;bottom:80px;right:20px;background:#e0923b;color:#fff;padding:14px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:9997;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.3);cursor:pointer";
+      errDiv.innerHTML=`⚠️ Cliente no guardado<br><span style="font-size:11px;font-weight:400">${e.message}</span><br><span style="font-size:10px;opacity:.8">Toca para cerrar</span>`;
+      errDiv.onclick=()=>errDiv.remove();
+      document.body.appendChild(errDiv);
+      console.error("Error guardando cliente:",e.message,e);
     }
 
     // Limpiar formulario
@@ -1488,13 +1591,13 @@ async function confirmarDevolucion(){
   try{
     const fh=localDate();
     for(const it of items){
-      // Buscar producto por SKU y talla
       const p=prods.find(x=>x.SKU===it.sku&&String(x.Talla)===String(it.tal));
       if(p){
         const nuevoStock=(+p.StockActual||0)+(+it.q||0);
         await updStock(p,nuevoStock);
+        // Registrar con precio de venta real para que el movimiento sea claro
         await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,"Entrada",it.q,fh,
-          me.name||"Admin",0,0,"Dev. parcial VTA:"+v.id]);
+          me.name||"Admin",it.pv||0,(it.pv||0)*(it.q||0),"Dev.Parcial:"+v.id]);
       }
     }
     closeM("m-dev");
@@ -1603,6 +1706,243 @@ async function cambiarEstado(ventaId, nuevoEstado, selectEl){
     alert("Error al cambiar estado:\n"+e.message);
     selectEl.value=v.EstadoEnvio||"Recibido en bodega";
   }
+}
+
+// ── CORTE DIARIO ─────────────────────────────────────────
+function toggleCorte(){
+  const panel=g("panel-corte");
+  const visible=panel.style.display!=="none";
+  panel.style.display=visible?"none":"block";
+  const btn=g("btn-corte");
+  if(btn)btn.innerHTML=visible?`<i class="bi bi-calendar-day"></i>Corte del Día`:`<i class="bi bi-x"></i>Cerrar Corte`;
+  if(!visible)renderCorte();
+}
+
+function renderCorte(){
+  const hoy=localDate();
+  g("corte-fecha").textContent=fd(hoy);
+  // Ventas de hoy
+  const vtasHoy=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f===hoy});
+  // Detalle de productos vendidos hoy
+  const detHoy=dtls.filter(d=>{
+    const v=vtas.find(x=>x.ID===d.VentaID);
+    return v&&excelToDate(v.Fecha)===hoy;
+  });
+  const totalDia=vtasHoy.reduce((s,v)=>s+(+v.Total||0),0);
+  const totalEnvio=vtasHoy.reduce((s,v)=>s+(+v.CostoEnvio||0),0);
+  const totalProductos=totalDia-totalEnvio;
+  g("corte-total").textContent=Q(totalDia);
+  if(!vtasHoy.length){
+    g("corte-body").innerHTML=`<div class="empty"><i class="bi bi-calendar-x"></i>Sin ventas hoy</div>`;
+    return;
+  }
+  // Agrupar productos vendidos
+  const xProd={};
+  detHoy.forEach(d=>{
+    const k=`${d.Producto}||${d.Talla}`;
+    if(!xProd[k])xProd[k]={nom:d.Producto,tal:d.Talla,qty:0,total:0,pv:d.PrecioUnit};
+    xProd[k].qty+=(+d.Cantidad||0);
+    xProd[k].total+=(+d.Subtotal||0);
+  });
+  // Por vendedor
+  const xVend={};
+  vtasHoy.forEach(v=>{xVend[v.Vendedor||"—"]=(xVend[v.Vendedor||"—"]||0)+(+v.Total||0)});
+  // Por método de pago
+  const xPago={};
+  vtasHoy.forEach(v=>{xPago[v.MetodoPago||"—"]=(xPago[v.MetodoPago||"—"]||0)+(+v.Total||0)});
+
+  g("corte-body").innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div style="background:var(--bone);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--mink);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Ventas</div>
+        <div style="font-family:var(--fd);font-size:1.8rem;font-weight:700">${vtasHoy.length}</div>
+      </div>
+      <div style="background:var(--bone);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--mink);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Productos</div>
+        <div style="font-family:var(--fd);font-size:1.8rem;font-weight:700">${Q(totalProductos)}</div>
+      </div>
+      <div style="background:var(--bone);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--mink);font-weight:600;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px">Envíos</div>
+        <div style="font-family:var(--fd);font-size:1.8rem;font-weight:700">${Q(totalEnvio)}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px">
+      <div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--ink)">Productos Vendidos</div>
+        <table class="t"><thead><tr><th>Producto</th><th>Talla</th><th>Cant.</th><th>P.Unit</th><th>Total</th></tr></thead>
+          <tbody>${Object.values(xProd).sort((a,b)=>b.total-a.total).map(p=>`<tr>
+            <td style="font-weight:500">${p.nom}</td>
+            <td style="text-align:center">${p.tal}</td>
+            <td style="text-align:center;font-weight:700">${p.qty}</td>
+            <td>${Q(p.pv)}</td>
+            <td style="font-weight:700">${Q(p.total)}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--ink)">Por Vendedor</div>
+        ${Object.entries(xVend).map(([v,t])=>`
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${v}</span><span style="font-weight:700">${Q(t)}</span>
+          </div>`).join("")}
+        <div style="font-weight:600;font-size:13px;margin:14px 0 10px;color:var(--ink)">Por Método de Pago</div>
+        ${Object.entries(xPago).map(([p,t])=>`
+          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${p}</span><span style="font-weight:700">${Q(t)}</span>
+          </div>`).join("")}
+        <div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:700;font-size:14px;border-top:2px solid var(--ink);margin-top:4px">
+          <span>TOTAL DÍA</span><span style="color:var(--rose)">${Q(totalDia)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── EXPORTAR A EXCEL ──────────────────────────────────────
+function exportarVentas(){
+  const fi=g("hfi").value,ff=g("hff").value;
+  const filtradas=vtas.filter(v=>{
+    const f=excelToDate(v.Fecha)||"";
+    return(!fi||f>=fi)&&(!ff||f<=ff);
+  });
+  if(!filtradas.length){alert("No hay ventas para exportar con los filtros actuales.");return}
+  // Construir CSV con detalle de productos
+  const rows=[
+    ["ID Venta","Fecha","Vendedor","Cliente","NIT","Telefono","Direccion","Envio","Pago","Producto","Talla","Cantidad","P.Unit","Subtotal","CostoEnvio","Total Venta","Estado"]
+  ];
+  filtradas.forEach(v=>{
+    const fVenta=excelToDate(v.Fecha)||"";
+    const dets=dtls.filter(d=>d.VentaID===v.ID);
+    if(dets.length){
+      dets.forEach((d,i)=>{
+        rows.push([
+          v.ID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
+          v.ClienteTel||"",v.ClienteDir||"",v.TipoEnvio||"",v.MetodoPago||"",
+          d.Producto||"",d.Talla||"",d.Cantidad||0,d.PrecioUnit||0,d.Subtotal||0,
+          i===0?(v.CostoEnvio||0):"",i===0?(v.Total||0):"",
+          i===0?(v.EstadoEnvio||""):""
+        ]);
+      });
+    }else{
+      rows.push([
+        v.ID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
+        v.ClienteTel||"",v.ClienteDir||"",v.TipoEnvio||"",v.MetodoPago||"",
+        "","","","","",v.CostoEnvio||0,v.Total||0,v.EstadoEnvio||""
+      ]);
+    }
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const bom="\uFEFF"; // BOM para que Excel abra con acentos correctos
+  const blob=new Blob([bom+csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`Sorelle_Ventas_${localDate()}.csv`;
+  a.click();
+  toast("✅ Excel exportado correctamente","#3db88a");
+}
+
+// ── ARCHIVO MENSUAL A ONEDRIVE ────────────────────────────
+async function ejecutarArchivo(){
+  const btn=g("btn-archivar");
+  const prog=g("archivo-progreso");
+  const okDiv=g("archivo-ok");
+  btn.style.display="none";
+  prog.style.display="block";
+  okDiv.style.display="none";
+
+  const hoy=new Date();
+  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const mes=meses[hoy.getMonth()];
+  const anio=hoy.getFullYear();
+  const fname=`DataMes${mes}${anio}.csv`;
+  const rutaOD=`Sorelle-Archivos/${fname}`;
+
+  function setProgreso(msg,pct){
+    g("archivo-prog-msg").textContent=msg;
+    g("archivo-prog-bar").style.width=pct+"%";
+  }
+
+  try{
+    setProgreso("Recopilando datos...",10);
+    await getToken();
+
+    // Construir CSV completo con las 5 tablas
+    const lineas=[];
+
+    // === TABLA VENTAS ===
+    lineas.push("=== VENTAS ===");
+    lineas.push(CV.join(","));
+    vtas.forEach(v=>lineas.push(CV.map(c=>csvVal(v[c])).join(",")));
+    lineas.push("");
+
+    setProgreso("Procesando detalle...",25);
+
+    // === TABLA DETALLE VENTAS ===
+    lineas.push("=== DETALLE VENTAS ===");
+    lineas.push(CD.join(","));
+    dtls.forEach(d=>lineas.push(CD.map(c=>csvVal(d[c])).join(",")));
+    lineas.push("");
+
+    setProgreso("Procesando movimientos...",40);
+
+    // === TABLA MOVIMIENTOS ===
+    lineas.push("=== MOVIMIENTOS ===");
+    lineas.push(CM.join(","));
+    movs.forEach(m=>lineas.push(CM.map(c=>csvVal(m[c])).join(",")));
+    lineas.push("");
+
+    setProgreso("Procesando clientes...",55);
+
+    // === TABLA CLIENTES ===
+    lineas.push("=== CLIENTES ===");
+    lineas.push(CC.join(","));
+    clis.forEach(c=>lineas.push(CC.map(col=>csvVal(c[col])).join(",")));
+    lineas.push("");
+
+    setProgreso("Procesando productos...",70);
+
+    // === TABLA PRODUCTOS (solo snapshot, no se borrará) ===
+    lineas.push("=== PRODUCTOS (snapshot) ===");
+    lineas.push(CP.join(","));
+    prods.forEach(p=>lineas.push(CP.map(c=>csvVal(p[c])).join(",")));
+
+    setProgreso("Subiendo a OneDrive...",85);
+
+    // Subir a OneDrive en carpeta Sorelle-Archivos
+    const bom="\uFEFF";
+    const contenido=bom+lineas.join("\n");
+    const bytes=new TextEncoder().encode(contenido);
+    const uploadUrl=`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/root:/${rutaOD}:/content`;
+    const r=await fetch(uploadUrl,{
+      method:"PUT",
+      headers:{Authorization:"Bearer "+tok,"Content-Type":"text/csv;charset=utf-8"},
+      body:bytes
+    });
+    if(!r.ok){
+      const err=await r.json().catch(()=>({}));
+      throw new Error(err?.error?.message||"HTTP "+r.status);
+    }
+
+    setProgreso("¡Listo!",100);
+    prog.style.display="none";
+    okDiv.style.display="block";
+    g("archivo-ok-path").textContent=`OneDrive → Sorelle-Archivos → ${fname}`;
+
+    // Marcar como archivado en esta sesión
+    const key=`sorelle_archivado_${anio}_${hoy.getMonth()+1}`;
+    sessionStorage.setItem(key,"1");
+    toast("✅ Archivo mensual guardado en OneDrive","#7c6cd1");
+
+  }catch(e){
+    prog.style.display="none";
+    btn.style.display="flex";
+    alert("❌ Error al guardar archivo:\n"+e.message+"\n\nVerifica que la carpeta 'Sorelle-Archivos' exista en tu OneDrive o créala antes de intentar.");
+  }
+}
+
+function csvVal(v){
+  if(v===null||v===undefined)return"";
+  return`"${String(v).replace(/"/g,'""')}"`;
 }
 
 function verVenta(id){
