@@ -599,16 +599,24 @@ table.t tbody tr:last-child{border-bottom:none}
         <div class="fg"><label class="fl">Stock Mínimo</label><input type="number" class="fc" id="p-min" placeholder="3" min="0"></div>
       </div>
       <div class="fg">
-        <label class="fl">Imagen — Link de OneDrive</label>
+        <label class="fl">Imagen del Producto</label>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input class="fc" id="p-img-url" placeholder="Pega aquí el link de OneDrive de la imagen..." oninput="prevImgUrl(this.value)" style="flex:1">
-          <button class="bg" onclick="g('p-img-url').value='';g('img-preview').style.display='none'" title="Limpiar"><i class="bi bi-x"></i></button>
+          <div id="img-preview" style="width:64px;height:64px;border-radius:10px;border:1px solid var(--border);background:var(--bone);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="abrirFotos()" title="Cambiar foto">
+            <img id="img-prev-el" src="" style="width:100%;height:100%;object-fit:cover;display:none" onerror="this.style.display='none';this.nextSibling.style.display='flex'">
+            <div id="img-prev-ph" style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mink)"><i class="bi bi-image" style="font-size:20px"></i><span style="font-size:9px">Sin foto</span></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <button class="bp" onclick="abrirFotos()" style="justify-content:center;padding:9px">
+              <i class="bi bi-folder2-open"></i>Seleccionar de OneDrive
+            </button>
+            <button class="bg" onclick="limpiarFoto()" style="justify-content:center;padding:7px;font-size:12px">
+              <i class="bi bi-x"></i>Quitar foto
+            </button>
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--mink);margin-bottom:8px">
-          <i class="bi bi-info-circle"></i> En OneDrive: clic derecho en la imagen → Compartir → Copiar link → pégalo aquí
-        </div>
-        <div id="img-preview" style="display:none;border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:160px;text-align:center;background:var(--bone)">
-          <img id="img-prev-el" src="" style="max-height:160px;max-width:100%;object-fit:contain" onerror="g('img-preview').style.display='none'">
+        <input type="hidden" id="p-img-url">
+        <div style="font-size:11px;color:var(--mink)">
+          <i class="bi bi-info-circle"></i> Las fotos deben estar en la carpeta <b>Sorelle-Imagenes</b> de tu OneDrive
         </div>
       </div>
     </div>
@@ -661,7 +669,62 @@ table.t tbody tr:last-child{border-bottom:none}
         <svg width="15" height="15" viewBox="0 0 24 24" fill="#25a244"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
         WhatsApp
       </button>
+      <button class="bg" id="btn-devolucion" onclick="abrirDevolucion()" style="display:none;color:#7c6cd1;border-color:#7c6cd1">
+        <i class="bi bi-arrow-return-left"></i>Devolución Parcial
+      </button>
       <button class="bp" onclick="printRcp()"><i class="bi bi-printer"></i>Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SELECTOR DE FOTOS ONEDRIVE -->
+<div id="m-fotos" class="mo" onclick="bgcl(event,'m-fotos')">
+  <div class="mb mlg">
+    <div class="mhd">
+      <div class="mti">Seleccionar Foto</div>
+      <button class="bx" onclick="closeM('m-fotos')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+        <div style="flex:1;font-size:13px;color:var(--mink)" id="fotos-path">📁 Sorelle-Imagenes</div>
+        <button class="bg" onclick="cargarFotos()" style="padding:7px 12px;font-size:12px">
+          <i class="bi bi-arrow-clockwise"></i>Actualizar
+        </button>
+      </div>
+      <div id="fotos-estado" style="display:none;padding:20px;text-align:center;color:var(--mink);font-size:13px"></div>
+      <div id="fotos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:420px;overflow-y:auto"></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-fotos')">Cancelar</button>
+      <div style="font-size:12px;color:var(--mink);display:flex;align-items:center">Toca una foto para seleccionarla</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLUCIÓN PARCIAL -->
+<div id="m-dev" class="mo" onclick="bgcl(event,'m-dev')">
+  <div class="mb msm">
+    <div class="mhd">
+      <div class="mti" style="color:#7c6cd1">Devolución Parcial</div>
+      <button class="bx" onclick="closeM('m-dev')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div style="background:#f0ecff;border:1px solid #c8bfee;border-radius:10px;padding:12px 14px;font-size:13px;color:#5b3b8a;margin-bottom:14px">
+        <b>Selecciona los productos devueltos.</b> El stock se reincorporará al inventario automáticamente.
+      </div>
+      <div id="dev-items"></div>
+      <div id="dev-total" style="background:var(--bone);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;display:none">
+        <div style="display:flex;justify-content:space-between;font-weight:600">
+          <span>Valor devuelto:</span><span id="dev-total-val">Q 0.00</span>
+        </div>
+        <div style="font-size:11px;color:var(--mink);margin-top:4px">Solo referencia — el ajuste monetario se realiza manualmente</div>
+      </div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-dev')">Cancelar</button>
+      <button class="bp" style="background:#7c6cd1" onclick="confirmarDevolucion()">
+        <i class="bi bi-arrow-return-left"></i>Confirmar Devolución
+      </button>
     </div>
   </div>
 </div>
@@ -918,39 +981,108 @@ async function updStock(p,nuevoStock){
   return updRaw(TBL.P,p._i,raw);
 }
 
-// Convierte links de compartir de OneDrive a links directos de imagen
-function convertODLink(url){
-  if(!url)return"";
-  // Si ya es un link directo (termina en imagen), usarlo tal cual
-  if(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url))return url;
-  // Links de compartir de OneDrive — convertir a link de descarga directa
-  if(url.includes("1drv.ms")||url.includes("onedrive.live.com")||url.includes("sharepoint.com")){
-    try{
-      // Para links de SharePoint/OneDrive usar embed directo
-      if(url.includes("sharepoint.com")){
-        // Reemplazar action=default por action=embedview para mostrar imagen
-        return url.replace("action=default","action=embedview").replace("action=view","action=embedview");
-      }
-      // Para 1drv.ms: agregar parámetro de descarga
-      return url.includes("?")?url+"&download=1":url+"?download=1";
-    }catch{return url}
-  }
-  return url;
+// ── SELECTOR DE FOTOS ONEDRIVE ────────────────────────────
+function limpiarFoto(){
+  g("p-img-url").value="";
+  const el=g("img-prev-el");const ph=g("img-prev-ph");
+  if(el){el.src="";el.style.display="none";}
+  if(ph)ph.style.display="flex";
 }
 
-function prevImgUrl(url){
-  const clean=convertODLink(url);
-  const prev=g("img-preview");const img=g("img-prev-el");
-  if(!clean){prev.style.display="none";return}
-  img.src=clean;prev.style.display="block";
-  img.onerror=()=>{
-    prev.style.display="block";
-    prev.innerHTML=`<div style="padding:20px;color:var(--mink);font-size:13px">
-      <i class="bi bi-exclamation-triangle" style="color:var(--orange)"></i>
-      No se puede previsualizar. El link se guardará igual.<br>
-      <span style="font-size:11px">Asegúrate que el link sea público o compartido con "cualquiera"</span></div>`;
-  };
+function setFotoPreview(url){
+  g("p-img-url").value=url;
+  const el=g("img-prev-el");const ph=g("img-prev-ph");
+  if(!url){limpiarFoto();return}
+  if(el){el.src=url;el.style.display="block";el.onerror=()=>{el.style.display="none";if(ph)ph.style.display="flex";};}
+  if(ph)ph.style.display="none";
 }
+
+async function abrirFotos(){
+  g("m-fotos").style.display="flex";
+  await cargarFotos();
+}
+
+async function cargarFotos(){
+  const grid=g("fotos-grid");const estado=g("fotos-estado");
+  grid.innerHTML="";estado.style.display="block";
+  estado.innerHTML=`<div class="spin" style="margin:0 auto 8px"></div>Cargando imágenes de OneDrive...`;
+  try{
+    await getToken();
+    // Buscar carpeta Sorelle-Imagenes en el drive del archivo
+    const url=`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/root:/Sorelle-Imagenes:/children?$select=id,name,file,@microsoft.graph.downloadUrl&$top=200`;
+    const r=await fetch(url,{headers:{Authorization:"Bearer "+tok}});
+    if(!r.ok){
+      // Si no existe la carpeta, mostrar instrucciones
+      const err=await r.json().catch(()=>({}));
+      if(r.status===404){
+        estado.innerHTML=`<i class="bi bi-folder-x" style="font-size:32px;display:block;margin-bottom:8px;opacity:.4"></i>
+          <b>Carpeta "Sorelle-Imagenes" no encontrada</b><br><br>
+          <div style="font-size:12px;line-height:1.6">Crea la carpeta en OneDrive:<br>
+          1. Abre OneDrive en el navegador<br>
+          2. Crea una carpeta llamada <b>Sorelle-Imagenes</b><br>
+          3. Sube las fotos de los productos ahí<br>
+          4. Vuelve aquí y toca Actualizar</div>`;
+      }else{
+        estado.innerHTML=`<i class="bi bi-exclamation-triangle" style="font-size:28px;color:var(--orange);display:block;margin-bottom:8px"></i>Error: ${err?.error?.message||r.status}`;
+      }
+      return;
+    }
+    const data=await r.json();
+    const imgs=data.value.filter(f=>f.file&&/image\//i.test(f.file.mimeType||""));
+    if(!imgs.length){
+      estado.innerHTML=`<i class="bi bi-images" style="font-size:32px;display:block;margin-bottom:8px;opacity:.4"></i>
+        <b>Sin imágenes</b><br><div style="font-size:12px;margin-top:6px">Sube fotos JPG/PNG a la carpeta<br><b>Sorelle-Imagenes</b> en OneDrive</div>`;
+      return;
+    }
+    estado.style.display="none";
+    // Obtener thumbnails via Graph API
+    const thumbPromises=imgs.map(async f=>{
+      try{
+        const tr=await fetch(`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${f.id}/thumbnails/0/medium`,{headers:{Authorization:"Bearer "+tok}});
+        if(tr.ok){const td=await tr.json();return{...f,thumb:td.url};}
+      }catch{}
+      return{...f,thumb:""};
+    });
+    const withThumbs=await Promise.all(thumbPromises);
+    grid.innerHTML=withThumbs.map(f=>`
+      <div onclick="seleccionarFoto('${f.id}','${encodeURIComponent(f.name)}')"
+        style="cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid transparent;
+        aspect-ratio:1;background:var(--bone);display:flex;flex-direction:column;
+        transition:border-color .15s;position:relative"
+        onmouseover="this.style.borderColor='var(--rose)'"
+        onmouseout="this.style.borderColor='transparent'">
+        ${f.thumb
+          ?`<img src="${f.thumb}" style="width:100%;height:80%;object-fit:cover" loading="lazy" onerror="this.parentNode.querySelector('.fn').style.fontSize='11px'">`
+          :`<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--mink)"><i class="bi bi-image" style="font-size:24px"></i></div>`}
+        <div class="fn" style="padding:3px 5px;font-size:10px;color:var(--mink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.9)">${f.name}</div>
+      </div>`).join("");
+  }catch(e){
+    estado.style.display="block";
+    estado.innerHTML=`<i class="bi bi-exclamation-triangle" style="font-size:28px;color:var(--orange);display:block;margin-bottom:8px"></i>Error al cargar fotos:<br>${e.message}`;
+  }
+}
+
+async function seleccionarFoto(fileId,encodedName){
+  try{
+    // Obtener thumbnail grande para mostrar en tabla
+    await getToken();
+    const r=await fetch(`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${fileId}/thumbnails/0/large`,{headers:{Authorization:"Bearer "+tok}});
+    if(r.ok){
+      const d=await r.json();
+      setFotoPreview(d.url);
+    }else{
+      // Fallback: usar download URL directo
+      const r2=await fetch(`https://graph.microsoft.com/v1.0/drives/${CFG.driveId}/items/${fileId}?select=@microsoft.graph.downloadUrl`,{headers:{Authorization:"Bearer "+tok}});
+      if(r2.ok){const d2=await r2.json();setFotoPreview(d2["@microsoft.graph.downloadUrl"]||"");}
+    }
+    closeM("m-fotos");
+  }catch(e){
+    alert("Error al seleccionar foto: "+e.message);
+  }
+}
+
+// Mantener compatibilidad con prevImgUrl
+function prevImgUrl(url){setFotoPreview(url)}
 
 // ╔═══════════════════════════════════════════════╗
 // ║  DATOS                                       ║
@@ -1224,7 +1356,7 @@ async function confirmarVenta(){
 
 function showRecibo(v){
   hideLo();
-  // Guardar datos de venta activa para WhatsApp
+  // Guardar datos de venta activa para WhatsApp y devolución
   window._reciboActual=v;
   // Mostrar botón WSP solo si hay teléfono del cliente
   const btnWsp=g("btn-wsp");
@@ -1232,6 +1364,9 @@ function showRecibo(v){
     const telLimpio=String(v.tel||"").replace(/\D/g,"");
     btnWsp.style.display=telLimpio.length>=7?"flex":"none";
   }
+  // Mostrar botón devolución solo si es admin y hay items
+  const btnDev=g("btn-devolucion");
+  if(btnDev) btnDev.style.display=(isAdmin()&&v.items&&v.items.length)?"flex":"none";
   const html=`
     <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:14px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${CFG.store}</div>
@@ -1305,6 +1440,67 @@ function enviarWsp(){
   // Abrir WhatsApp — funciona en móvil (app nativa) y escritorio (WhatsApp Web)
   const url=`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
   window.open(url,"_blank");
+}
+
+// ── DEVOLUCIÓN PARCIAL ────────────────────────────────────
+function abrirDevolucion(){
+  const v=window._reciboActual;
+  if(!v||!v.items||!v.items.length){alert("No hay productos en esta venta");return}
+  const cont=g("dev-items");
+  cont.innerHTML=v.items.map((it,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="dev-${i}" data-idx="${i}"
+        style="width:18px;height:18px;cursor:pointer;accent-color:#7c6cd1"
+        onchange="calcDevTotal()">
+      <label for="dev-${i}" style="flex:1;cursor:pointer">
+        <div style="font-weight:600;font-size:13px">${it.nom}</div>
+        <div style="font-size:12px;color:var(--mink)">Talla ${it.tal} · ${it.q} unidad${it.q>1?"es":""} · ${Q(it.pv)} c/u</div>
+      </label>
+      <div style="font-weight:700;font-size:13px">${Q(it.sub)}</div>
+    </div>`).join("");
+  // Limpiar total
+  g("dev-total").style.display="none";
+  g("dev-total-val").textContent="Q 0.00";
+  closeM("m-vta");
+  g("m-dev").style.display="flex";
+}
+
+function calcDevTotal(){
+  const v=window._reciboActual;
+  const checks=g("dev-items").querySelectorAll("input[type=checkbox]");
+  let total=0,alguno=false;
+  checks.forEach(ch=>{
+    if(ch.checked){const it=v.items[+ch.dataset.idx];total+=it.sub||0;alguno=true;}
+  });
+  const box=g("dev-total");
+  box.style.display=alguno?"block":"none";
+  g("dev-total-val").textContent=Q(total);
+}
+
+async function confirmarDevolucion(){
+  const v=window._reciboActual;
+  const checks=g("dev-items").querySelectorAll("input[type=checkbox]:checked");
+  if(!checks.length){alert("Selecciona al menos un producto para devolver");return}
+  const items=Array.from(checks).map(ch=>v.items[+ch.dataset.idx]);
+  const lista=items.map(it=>`• ${it.nom} T${it.tal} ×${it.q}`).join("\n");
+  if(!confirm(`¿Confirmar devolución parcial?\n\n${lista}\n\nEl stock se reincorporará al inventario.`))return;
+  showLo("Procesando devolución...");
+  try{
+    const fh=localDate();
+    for(const it of items){
+      // Buscar producto por SKU y talla
+      const p=prods.find(x=>x.SKU===it.sku&&String(x.Talla)===String(it.tal));
+      if(p){
+        const nuevoStock=(+p.StockActual||0)+(+it.q||0);
+        await updStock(p,nuevoStock);
+        await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,"Entrada",it.q,fh,
+          me.name||"Admin",0,0,"Dev. parcial VTA:"+v.id]);
+      }
+    }
+    closeM("m-dev");
+    await refreshData();
+    toast("🔄 Devolución registrada — "+items.length+" producto(s) devuelto(s)","#7c6cd1");
+  }catch(e){hideLo();alert("Error al procesar devolución:\n"+e.message)}
 }
 
 // ╔═══════════════════════════════════════════════╗
@@ -1490,6 +1686,7 @@ function openProd(idx=null){
   // Limpiar campos primero
   ["p-sku","p-nom","p-prov","p-cos","p-pvt","p-col","p-med","p-img-url"].forEach(id=>{const e=g(id);if(e)e.value=""});
   g("p-stk").value="0";g("p-min").value="3";
+  limpiarFoto();
   // Valores por defecto de selects
   try{g("p-cat").value="Sandalias"}catch(e){}
   try{g("p-tal").value="36"}catch(e){}
@@ -1512,7 +1709,7 @@ function openProd(idx=null){
     // Imagen
     const imgUrl=String(p.ImagenURL||"");
     if(g("p-img-url"))g("p-img-url").value=imgUrl;
-    if(imgUrl)prevImgUrl(imgUrl);
+    if(imgUrl)setFotoPreview(imgUrl); else limpiarFoto();
   }
   g("m-prod").style.display="flex";
 }
