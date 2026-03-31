@@ -215,11 +215,7 @@ table.t tbody tr:last-child{border-bottom:none}
   body *{visibility:hidden}
   #rcp,#rcp *{visibility:visible}
   #rcp{position:fixed;inset:0;background:#fff;padding:8px}
-  #lbl-print,#lbl-print *{visibility:visible}
-  #lbl-print{position:fixed;inset:0;background:#fff}
 }
-@page{size:4in 4in;margin:4mm}
-@page lbl{size:2in 1in;margin:1mm}
 
 /* ── MOBILE MENU TOGGLE ── */
 #mob-bar{display:none;position:fixed;top:0;left:0;right:0;height:54px;
@@ -1707,7 +1703,87 @@ function showRecibo(v){
   g("m-vta-body").innerHTML=`<div class="ibox" style="margin-bottom:14px">✅ <b>Venta registrada. ID: ${v.id}</b></div>${html}`;
   g("m-vta").style.display="flex";
 }
-function printRcp(){g("rcp").style.display="block";window.print();g("rcp").style.display="none"}
+function printRcp(){
+  const v=window._reciboActual;
+  if(!v)return;
+  // Construir HTML del recibo optimizado para 4×4 pulgadas
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @page{size:4in 4in;margin:4mm}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{font-family:Arial,sans-serif;font-size:9pt;width:3.92in;overflow:hidden}
+    .hd{text-align:center;border-bottom:1.5px solid #111;padding-bottom:5px;margin-bottom:6px}
+    .store{font-family:Georgia,serif;font-size:14pt;font-weight:700;line-height:1.1}
+    .sub{font-size:7pt;color:#666;margin-top:2px;letter-spacing:.5px}
+    .info{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:6px;font-size:7.5pt}
+    .info .full{grid-column:1/-1}
+    .info b{font-weight:600}
+    table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:6px}
+    thead tr{background:#f5f0e8}
+    th{padding:3px 2px;text-align:left;font-weight:600}
+    th:nth-child(3),th:nth-child(4){text-align:center}
+    th:nth-child(5),th:nth-child(6){text-align:right}
+    td{padding:3px 2px;border-bottom:.5px solid #eee}
+    td:nth-child(3),td:nth-child(4){text-align:center}
+    td:nth-child(5),td:nth-child(6){text-align:right}
+    .totals{text-align:right;font-size:8.5pt;border-top:1.5px solid #111;padding-top:5px}
+    .total-line{display:flex;justify-content:space-between;padding:1px 0}
+    .grand{font-weight:700;font-size:10pt;margin-top:3px;padding-top:3px;border-top:1px solid #ccc}
+    .notas{font-size:7.5pt;color:#555;margin-top:5px;padding-top:4px;border-top:.5px solid #ddd}
+    .gracias{text-align:center;margin-top:8px;font-size:7pt;color:#999}
+  </style>
+  </head><body>
+  <div class="hd">
+    <div class="store">${CFG.store}</div>
+    <div class="sub">RECIBO DE VENTA</div>
+  </div>
+  <div class="info">
+    <div><b>No.:</b> ${String(v.id).slice(-12)}</div>
+    <div><b>Fecha:</b> ${fd(v.fh)}</div>
+    <div><b>Vendedor:</b> ${v.vnd}</div>
+    <div><b>Pago:</b> ${v.pago}</div>
+    <div><b>Cliente:</b> ${v.nom}</div>
+    <div><b>NIT:</b> ${v.nit||"CF"}</div>
+    ${v.tel?`<div><b>Tel:</b> ${v.tel}</div><div></div>`:""}
+    ${v.dir?`<div class="full"><b>Dir:</b> ${v.dir}</div>`:""}
+    <div><b>Envío:</b> ${v.envio}</div>
+    <div><b>Estado:</b> ${v.estadoEnvio||"—"}</div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Producto</th><th>Cat.</th>
+      <th>T.</th><th>Cant.</th>
+      <th>P.Unit</th><th>Total</th>
+    </tr></thead>
+    <tbody>${v.items.map(it=>`<tr>
+      <td>${it.nom}</td>
+      <td style="color:#888">${it.cat||"—"}</td>
+      <td>${it.tal}</td>
+      <td>${it.q}</td>
+      <td>Q${(+it.pv).toFixed(2)}</td>
+      <td>Q${(+it.sub).toFixed(2)}</td>
+    </tr>`).join("")}</tbody>
+  </table>
+  <div class="totals">
+    <div class="total-line"><span>Subtotal</span><span>Q${(+v.sub).toFixed(2)}</span></div>
+    ${v.env>0?`<div class="total-line"><span>Envío</span><span>Q${(+v.env).toFixed(2)}</span></div>`:""}
+    <div class="total-line grand"><span>TOTAL</span><span>Q${(+v.tot).toFixed(2)}</span></div>
+  </div>
+  ${v.notas?`<div class="notas"><b>Notas:</b> ${v.notas}</div>`:""}
+  <div class="gracias">¡Gracias por tu compra!</div>
+  <script>window.onload=function(){window.print();<\/script>
+  </body></html>`;
+
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;right:-9999px;top:-9999px;width:4in;height:4in;border:none";
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  const clean=()=>setTimeout(()=>iframe.remove(),1500);
+  iframe.contentWindow.addEventListener("afterprint",clean);
+  setTimeout(clean,15000);
+}
 
 function enviarWsp(){
   const v=window._reciboActual;
@@ -2678,10 +2754,10 @@ function imprimirEtiquetas(){
   });
   if(!items.length){alert("No se encontraron productos válidos.");return}
 
-  // Construir HTML para iframe — más confiable que manipular @page en el documento principal
-  const etqHtml=items.map(p=>`
+  // Construir HTML para iframe con IDs únicos usando índice secuencial
+  const etqHtml=items.map((p,i)=>`
     <div class="etq">
-      <svg id="b${items.indexOf(p)}_${p.SKU.replace(/[^a-z0-9]/gi,'_')}"></svg>
+      <svg id="bc${i}"></svg>
       <div class="sku">${p.SKU}</div>
       <div class="nom">${p.Nombre} · T${p.Talla}</div>
     </div>`).join("");
@@ -2701,11 +2777,13 @@ function imprimirEtiquetas(){
   </head><body>${etqHtml}
   <script>
   window.onload=function(){
-    ${items.map((p,i)=>{
-      const svgId=`b${i}_${p.SKU.replace(/[^a-z0-9]/gi,'_')}`;
-      return`try{JsBarcode(document.getElementById('${svgId}'),'${p.SKU}',{format:'CODE128',displayValue:false,height:50,margin:1,background:'transparent'});}catch(e){}`;
-    }).join('\n    ')}
-    setTimeout(function(){window.print();},800);
+    var skus=${JSON.stringify(items.map(p=>p.SKU))};
+    for(var i=0;i<skus.length;i++){
+      try{JsBarcode(document.getElementById('bc'+i),skus[i],
+        {format:'CODE128',displayValue:false,height:50,margin:1,background:'transparent'});
+      }catch(e){console.warn('Barcode error SKU',skus[i],e);}
+    }
+    setTimeout(function(){window.print();},600);
   };
   <\/script></body></html>`;
 
