@@ -529,6 +529,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <div class="ph">
         <div class="pt">Productos</div>
         <div style="display:flex;gap:8px" id="prod-admin-btns">
+          <button class="bg" onclick="abrirCatalogo()" style="color:var(--rose);border-color:var(--rose)"><i class="bi bi-journal-richtext"></i>Catálogo</button>
           <button class="bg" onclick="abrirEtiquetas()" style="color:var(--purple);border-color:var(--purple)"><i class="bi bi-upc-scan"></i>Etiquetas</button>
           <button class="bp b" onclick="openCSV()"><i class="bi bi-file-earmark-arrow-up"></i>Carga CSV</button>
           <button class="bp" onclick="openProd()"><i class="bi bi-plus-lg"></i>Nuevo</button>
@@ -734,6 +735,15 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL ZOOM DE IMAGEN -->
+<div id="m-zoom" class="mo" onclick="closeM('m-zoom')" style="display:none;background:rgba(0,0,0,.92)">
+  <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px">
+    <button onclick="closeM('m-zoom')" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    <img id="zoom-img" src="" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+    <div id="zoom-label" style="color:rgba(255,255,255,.8);font-size:14px;font-weight:500"></div>
+  </div>
+</div>
+
 <!-- MODAL SELECTOR DE FOTOS ONEDRIVE -->
 <div id="m-fotos" class="mo" onclick="bgcl(event,'m-fotos')">
   <div class="mb mlg">
@@ -775,6 +785,40 @@ table.t tbody tr:last-child{border-bottom:none}
       <button class="bp" id="btn-wsp-enviar" style="background:#25a244;border-color:#25a244" onclick="enviarWspRemarketing()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
         Abrir WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CATÁLOGO PDF -->
+<div id="m-catalogo" class="mo" onclick="bgcl(event,'m-catalogo')" style="display:none">
+  <div class="mb mlg">
+    <div class="mhd">
+      <div class="mti" style="color:var(--rose)"><i class="bi bi-journal-richtext"></i> Generar Catálogo</div>
+      <button class="bx" onclick="closeM('m-catalogo')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div class="fr c3" style="gap:10px;margin-bottom:14px">
+        <div class="fg" style="margin:0"><label class="fl">Filtrar por talla</label>
+          <select class="fc" id="cat-tal" onchange="filtrarCatalogo()"><option value="">Todas las tallas</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Filtrar por categoría</label>
+          <select class="fc" id="cat-cat" onchange="filtrarCatalogo()"><option value="">Todas</option></select></div>
+        <div class="fg" style="margin:0"><label class="fl">Solo con imagen</label>
+          <select class="fc" id="cat-img" onchange="filtrarCatalogo()">
+            <option value="">Todos</option><option value="si">Solo con imagen</option></select></div>
+      </div>
+      <div style="background:var(--bone);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+        <span id="cat-count" style="font-size:13px;color:var(--mink)">0 productos</span>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+          <input type="checkbox" id="cat-todos" onchange="seleccionarTodosCat(this.checked)"> Seleccionar todos
+        </label>
+      </div>
+      <div id="cat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:380px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rose) var(--bone)"></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-catalogo')">Cancelar</button>
+      <button class="bp" style="background:var(--rose)" onclick="generarCatalogoPDF()">
+        <i class="bi bi-file-pdf"></i>Generar PDF
       </button>
     </div>
   </div>
@@ -987,6 +1031,8 @@ function cleanMsal(){
 }
 function cleanAndReload(){cleanMsal();location.reload()}
 
+function isMobile(){return/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)}
+
 async function getMsal(){
   if(mReady)return mApp;
   const Lib=window.msal||window.msalBrowser;
@@ -994,7 +1040,7 @@ async function getMsal(){
   mApp=new Lib.PublicClientApplication({
     auth:{clientId:CFG.clientId,authority:`https://login.microsoftonline.com/${CFG.tenantId}`,
           redirectUri:window.location.origin+window.location.pathname},
-    cache:{cacheLocation:"sessionStorage",storeAuthStateInCookie:true}
+    cache:{cacheLocation:"localStorage",storeAuthStateInCookie:true}
   });
   await mApp.initialize();
   mReady=true;
@@ -1005,7 +1051,12 @@ async function startApp(){
   showLogin();
   try{
     const app=await getMsal();
-    await app.handleRedirectPromise().catch(()=>{});
+    // Manejar retorno de redirect (móvil)
+    const redirectResult=await app.handleRedirectPromise().catch(()=>null);
+    if(redirectResult){
+      me=redirectResult.account;tok=redirectResult.accessToken;
+      bootApp();return;
+    }
     const acc=app.getAllAccounts();
     if(acc.length>0){
       me=acc[0];
@@ -1020,13 +1071,18 @@ async function signIn(){
   try{
     showLo("Conectando con Microsoft...");
     const app=await getMsal();
+    if(isMobile()){
+      // En móvil usar redirect — evita bucles de popup
+      await app.loginRedirect({scopes:SCOPES,prompt:"select_account"});
+      return; // La página se recargará con el resultado
+    }
     const r=await app.loginPopup({scopes:SCOPES,prompt:"select_account"});
     me=r.account;tok=r.accessToken;
     bootApp();
   }catch(e){
     hideLo();
     const m=e.message||"";
-    if(m.includes("popup"))showErr("El navegador bloqueó el popup. Permite popups e intenta de nuevo.");
+    if(m.includes("popup"))showErr("El navegador bloqueó el popup. Usa Chrome e intenta de nuevo.");
     else if(m.includes("cancelled")||m.includes("user_cancelled"))showErr("Inicio de sesión cancelado.");
     else showErr("Error: "+m);
   }
@@ -1037,18 +1093,20 @@ async function getToken(){
     tok=(await mApp.acquireTokenSilent({account:me,scopes:SCOPES})).accessToken;
   }catch(e1){
     try{
+      if(isMobile()){
+        await mApp.acquireTokenRedirect({account:me,scopes:SCOPES});
+        return; // redirect — la página se recargará
+      }
       tok=(await mApp.acquireTokenPopup({account:me,scopes:SCOPES})).accessToken;
     }catch(e2){
       const msg=e2.message||"";
       if(msg.includes("interaction_in_progress")){
-        // Limpiar estado MSAL y reiniciar
         cleanMsal();mReady=false;mApp=null;
-        const app=await getMsal(true);
+        const app=await getMsal();
+        if(isMobile()){await app.loginRedirect({scopes:SCOPES});return;}
         const r=await app.loginPopup({scopes:SCOPES,prompt:"select_account"});
         me=r.account;tok=r.accessToken;
-      }else{
-        throw e2;
-      }
+      }else{throw e2;}
     }
   }
 }
@@ -1342,7 +1400,169 @@ async function updStock(p,nuevoStock){
   return updRaw(TBL.P,p._i,raw);
 }
 
-// ── SELECTOR DE FOTOS ONEDRIVE ────────────────────────────
+// ── IMÁGENES CON TOKEN (móvil) ────────────────────────────
+async function fetchImgWithToken(imgEl,url){
+  if(!url)return;
+  try{
+    await getToken();
+    const r=await fetch(url,{headers:{Authorization:"Bearer "+tok}});
+    if(!r.ok){imgEl.parentNode.innerHTML='<div class="piph"><i class="bi bi-image"></i></div>';return}
+    const blob=await r.blob();
+    imgEl.src=URL.createObjectURL(blob);
+  }catch(e){
+    imgEl.parentNode.innerHTML='<div class="piph"><i class="bi bi-image"></i></div>';
+  }
+}
+
+function zoomImg(url,label){
+  const zi=g("zoom-img");
+  zi.src=url;
+  zi.onerror=async()=>{
+    try{
+      await getToken();
+      const r=await fetch(url,{headers:{Authorization:"Bearer "+tok}});
+      if(r.ok){const blob=await r.blob();zi.src=URL.createObjectURL(blob);}
+    }catch(e){}
+  };
+  g("zoom-label").textContent=label||"";
+  g("m-zoom").style.display="flex";
+}
+
+// ── CATÁLOGO PDF ──────────────────────────────────────────
+let catSeleccionados=new Set();
+
+function abrirCatalogo(){
+  catSeleccionados.clear();
+  g("m-catalogo").style.display="flex";
+  // Poblar filtros
+  const talls=[...new Set(prods.map(p=>String(p.Talla)).filter(Boolean))].sort((a,b)=>+a-+b);
+  const cats=[...new Set(prods.map(p=>p.Categoria).filter(Boolean))].sort();
+  const selT=g("cat-tal");selT.innerHTML='<option value="">Todas las tallas</option>';
+  talls.forEach(t=>{const o=new Option("T"+t,t);selT.appendChild(o)});
+  const selC=g("cat-cat");selC.innerHTML='<option value="">Todas</option>';
+  cats.forEach(c=>{const o=new Option(c,c);selC.appendChild(o)});
+  filtrarCatalogo();
+}
+
+function filtrarCatalogo(){
+  const tal=g("cat-tal").value,cat=g("cat-cat").value,img=g("cat-img").value;
+  const lista=prods.filter(p=>{
+    const activo=p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE";
+    if(!activo)return false;
+    if(tal&&String(p.Talla)!==tal)return false;
+    if(cat&&p.Categoria!==cat)return false;
+    if(img==="si"&&!p.ImagenURL)return false;
+    return true;
+  });
+  g("cat-count").textContent=`${lista.length} productos`;
+  g("cat-grid").innerHTML=lista.map(p=>`
+    <div onclick="toggleCat('${String(p.SKU).replace(/'/g,"\\'")}',this)"
+      style="border-radius:8px;border:2px solid ${catSeleccionados.has(String(p.SKU))?'var(--rose)':'var(--border)'};
+      overflow:hidden;cursor:pointer;background:#fff;transition:border-color .15s">
+      <div style="width:100%;aspect-ratio:1;background:var(--bone);overflow:hidden;position:relative">
+        ${p.ImagenURL
+          ?`<img src="${p.ImagenURL}" style="width:100%;height:100%;object-fit:cover"
+              onerror="fetchImgWithToken(this,'${p.ImagenURL.replace(/'/g,"\\'")}');this.onerror=null">`
+          :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><i class="bi bi-image" style="font-size:24px;color:var(--mink)"></i></div>`}
+        ${catSeleccionados.has(String(p.SKU))?`<div style="position:absolute;top:4px;right:4px;background:var(--rose);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px">✓</div>`:""}
+      </div>
+      <div style="padding:4px 6px">
+        <div style="font-size:10px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.Nombre}</div>
+        <div style="font-size:9px;color:var(--mink)">T${p.Talla} · ${Q(p.PrecioVenta)}</div>
+      </div>
+    </div>`).join("");
+  g("cat-todos").checked=catSeleccionados.size===lista.length&&lista.length>0;
+}
+
+function toggleCat(sku,card){
+  if(catSeleccionados.has(sku)){catSeleccionados.delete(sku);card.style.borderColor="var(--border)";}
+  else{catSeleccionados.add(sku);card.style.borderColor="var(--rose)";}
+  filtrarCatalogo();
+}
+
+function seleccionarTodosCat(checked){
+  const tal=g("cat-tal").value,cat=g("cat-cat").value,img=g("cat-img").value;
+  prods.filter(p=>{
+    const activo=p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE";
+    if(!activo)return false;
+    if(tal&&String(p.Talla)!==tal)return false;
+    if(cat&&p.Categoria!==cat)return false;
+    if(img==="si"&&!p.ImagenURL)return false;
+    return true;
+  }).forEach(p=>checked?catSeleccionados.add(String(p.SKU)):catSeleccionados.delete(String(p.SKU)));
+  filtrarCatalogo();
+}
+
+async function generarCatalogoPDF(){
+  if(!catSeleccionados.size){alert("Selecciona al menos un producto.");return}
+  const selProds=prods.filter(p=>catSeleccionados.has(String(p.SKU)));
+  showLo("Generando catálogo...");
+  // Cargar imágenes con token y convertir a base64
+  const imgData={};
+  for(const p of selProds){
+    if(!p.ImagenURL)continue;
+    try{
+      await getToken();
+      const r=await fetch(p.ImagenURL,{headers:{Authorization:"Bearer "+tok}});
+      if(r.ok){
+        const blob=await r.blob();
+        imgData[p.SKU]=await new Promise(res=>{
+          const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(blob);
+        });
+      }
+    }catch(e){}
+  }
+  const tienda=getNombreTienda();
+  const fecha=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
+  const items=selProds.map(p=>`
+    <div class="item">
+      <div class="img-box">
+        ${imgData[p.SKU]?`<img src="${imgData[p.SKU]}">`:`<div class="no-img"><span>Sin imagen</span></div>`}
+      </div>
+      <div class="info">
+        <div class="nom">${p.Nombre}</div>
+        <div class="det">Talla ${p.Talla}${p.Color?" · "+p.Color:""}</div>
+        <div class="det">${p.Categoria||""}</div>
+        <div class="precio">Q ${(+p.PrecioVenta).toFixed(2)}</div>
+      </div>
+    </div>`).join("");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @page{size:letter;margin:15mm}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;color:#111}
+    .header{text-align:center;border-bottom:2px solid #c8506a;padding-bottom:10px;margin-bottom:16px}
+    .header h1{font-family:Georgia,serif;font-size:22pt;color:#c8506a}
+    .header p{font-size:9pt;color:#888;margin-top:4px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .item{border:1px solid #e4ddd4;border-radius:8px;overflow:hidden;break-inside:avoid}
+    .img-box{width:100%;aspect-ratio:1;background:#f5f0e8;overflow:hidden}
+    .img-box img{width:100%;height:100%;object-fit:cover}
+    .no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:9pt}
+    .info{padding:8px}
+    .nom{font-weight:700;font-size:10pt;margin-bottom:2px}
+    .det{font-size:8pt;color:#888}
+    .precio{font-size:11pt;font-weight:700;color:#c8506a;margin-top:4px}
+    .footer{text-align:center;margin-top:20px;font-size:8pt;color:#999;border-top:1px solid #eee;padding-top:8px}
+  </style>
+  </head><body>
+  <div class="header"><h1>${tienda}</h1><p>Catálogo de Productos · ${fecha} · ${selProds.length} estilos</p></div>
+  <div class="grid">${items}</div>
+  <div class="footer">${tienda} · Catálogo generado el ${fecha}</div>
+  <script>window.onload=function(){window.print();};<\/script>
+  </body></html>`;
+  hideLo();
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;right:-9999px;top:-9999px;width:8.5in;height:11in;border:none";
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  const clean=()=>setTimeout(()=>iframe.remove(),2000);
+  iframe.contentWindow.addEventListener("afterprint",clean);
+  setTimeout(clean,20000);
+  closeM("m-catalogo");
+}
 function limpiarFoto(){
   g("p-img-url").value="";
   const el=g("img-prev-el");const ph=g("img-prev-ph");
@@ -2492,9 +2712,7 @@ function enviarWspRemarketing(){
   const url=`https://wa.me/${_wspActual.num}?text=${encodeURIComponent(msg)}`;
   window.open(url,"_blank");
   closeM("m-wsp-tmpl");
-  // Registrar contacto en Excel y actualizar tabla
   registrarContactoExcel(_wspActual.nit,_wspActual.nom)
-    .then(()=>refreshData())
     .catch(e=>console.warn("Contacto no guardado:",e.message));
 }
 
@@ -2508,16 +2726,17 @@ async function registrarContactoExcel(nit,nom){
   const c=clis[ci];
   const hdrs=realHeaders.C&&realHeaders.C.length?realHeaders.C:CC;
   const raw=[...c._raw];
-  // Expandir el raw si no tiene columna UltimoContacto aún
   const ui=hdrs.indexOf("UltimoContacto");
+  const hoy=localDate();
   if(ui>=0){
     while(raw.length<=ui)raw.push("");
-    raw[ui]=localDate();
-  }else{
-    // Columna no existe aún en Excel — ignorar silenciosamente
-    return;
+    raw[ui]=hoy;
+    await updRaw(TBL.C,c._i,raw);
+    // Actualizar cache local inmediatamente — sin esperar refreshData
+    clis[ci].UltimoContacto=hoy;
+    clis[ci]._raw=raw;
+    renderCli(); // re-renderizar con el nuevo estado
   }
-  await updRaw(TBL.C,c._i,raw);
 }
 
 function getEstadoContacto(c){
@@ -2608,7 +2827,10 @@ function renderProds(){
   const low=p=>(+p.StockActual||0)<=(+p.StockMinimo||0);
   const mrg=p=>+p.Costo>0?(((+p.PrecioVenta-+p.Costo)/+p.Costo)*100).toFixed(0)+"%":"—";
   tb.innerHTML=ls.map(p=>`<tr>
-    <td>${p.ImagenURL?`<img src="${p.ImagenURL}" class="pimg" onerror="this.parentNode.innerHTML='<div class=piph><i class=\\'bi bi-image\\'></i></div>'">`:`<div class="piph"><i class="bi bi-image"></i></div>`}</td>
+    <td>${p.ImagenURL?`<img src="${p.ImagenURL}" class="pimg"
+      onerror="fetchImgWithToken(this,'${p.ImagenURL.replace(/'/g,"\\'")}');this.onerror=null"
+      onclick="zoomImg('${p.ImagenURL.replace(/'/g,"\\'")}','${(p.Nombre||"").replace(/'/g,"\\'")} - T${p.Talla}')"
+      style="cursor:zoom-in">`:`<div class="piph"><i class="bi bi-image"></i></div>`}</td>
     <td><code style="font-size:11px;color:var(--rose)">${p.SKU}</code></td>
     <td style="font-weight:500">${p.Nombre}</td>
     <td><span class="b bc">${p.Categoria||""}</span></td>
