@@ -239,7 +239,8 @@ table.t tbody tr:last-child{border-bottom:none}
   #sidebar{transform:translateX(-224px);transition:transform .25s ease;box-shadow:none;z-index:160}
   #sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.4)}
   #mob-bar{display:flex}
-  #app{display:block}
+  /* #app visibility controlada por JS — no sobrescribir aquí */
+  #app.logged-in{display:block}
   #main{margin-left:0!important;padding:70px 14px 80px}
   .kg{grid-template-columns:1fr 1fr;gap:10px}
   .kv{font-size:1.6rem}.kc{padding:14px 12px}
@@ -757,6 +758,28 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL SELECTOR PLANTILLA WSP REMARKETING -->
+<div id="m-wsp-tmpl" class="mo" onclick="bgcl(event,'m-wsp-tmpl')" style="display:none">
+  <div class="mb msm">
+    <div class="mhd">
+      <div class="mti" style="color:#25a244"><svg width="18" height="18" viewBox="0 0 24 24" fill="#25a244" style="margin-right:6px;vertical-align:middle"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>Enviar por WhatsApp</div>
+      <button class="bx" onclick="closeM('m-wsp-tmpl')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div style="font-size:13px;color:var(--mink);margin-bottom:14px">Selecciona el tipo de mensaje para <b id="wsp-tmpl-cliente"></b>:</div>
+      <div id="wsp-tmpl-opts" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div id="wsp-preview" style="display:none;background:var(--bone);border-radius:10px;padding:12px;margin-top:14px;font-size:12px;line-height:1.6;white-space:pre-wrap;color:var(--ink)"></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-wsp-tmpl')">Cancelar</button>
+      <button class="bp" id="btn-wsp-enviar" style="background:#25a244;border-color:#25a244" onclick="enviarWspRemarketing()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Abrir WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DEVOLUCIÓN PARCIAL -->
 <div id="m-dev" class="mo" onclick="bgcl(event,'m-dev')">
   <div class="mb msm">
@@ -1076,19 +1099,51 @@ async function guardarConfig(clave,valor){
 }
 
 function getNombreTienda(){
+  // Primero Excel, luego localStorage como fallback
   const excel=getConfig("NombreTienda");
   if(excel)return excel;
-  // Fallback localStorage (compatibilidad)
-  const lsKey=`sorelle_tienda_${me?.username||""}`;
-  return localStorage.getItem(lsKey)||CFG.store;
+  return localStorage.getItem(`sorelle_tienda_${me?.username||""}`)||CFG.store;
 }
 
-function guardarNombreTienda(val){
-  // Guardar en Excel con debounce para no hacer una llamada por cada tecla
+async function guardarNombreTienda(val){
+  const tienda=val.trim();
+  // Guardar en localStorage inmediatamente (respaldo instantáneo)
+  if(tienda)localStorage.setItem(`sorelle_tienda_${me?.username||""}`,tienda);
+  // Luego intentar guardar en Excel con debounce
   clearTimeout(guardarNombreTienda._t);
-  guardarNombreTienda._t=setTimeout(()=>{
-    if(val.trim())guardarConfig("NombreTienda",val.trim());
+  guardarNombreTienda._t=setTimeout(async()=>{
+    if(!tienda)return;
+    try{
+      await guardarConfig("NombreTienda",tienda);
+      toast("✅ Nombre de tienda guardado","#3db88a");
+    }catch(e){
+      console.warn("Config no guardada en Excel:",e.message);
+      toast("⚠️ Guardado solo localmente — verifica la hoja Configuracion","#e0923b");
+    }
   },1500);
+}
+
+async function guardarConfig(clave,valor){
+  const user=me?.username||"";
+  const fecha=localDate();
+  // Buscar fila existente para este usuario
+  const fila=configs.find(c=>
+    String(c.Clave||"")===clave&&
+    String(c.Usuario||"").toLowerCase()===user.toLowerCase()
+  );
+  if(fila){
+    const raw=[...fila._raw];
+    // pos 0=Clave, 1=Valor, 2=Usuario, 3=FechaModificacion
+    if(raw.length>1)raw[1]=valor;
+    if(raw.length>3)raw[3]=fecha;
+    await updRaw(TBL.CFG,fila._i,raw);
+  }else{
+    await addRow(TBL.CFG,[clave,valor,user,fecha]);
+  }
+  // Actualizar cache local sin recargar todo
+  const ci=configs.findIndex(c=>String(c.Clave||"")===clave&&String(c.Usuario||"").toLowerCase()===user.toLowerCase());
+  if(ci>=0)configs[ci].Valor=valor;
+  else configs.push({Clave:clave,Valor:valor,Usuario:user,FechaModificacion:fecha,_i:configs.length,_raw:[clave,valor,user,fecha]});
 }
 
 function signOut(){
@@ -1105,6 +1160,7 @@ function isAdmin(){
 function bootApp(){
   g("login-screen").style.display="none";
   g("app").style.display="block";
+  g("app").classList.add("logged-in"); // Fix mobile visibility
   const name=me.name||me.username;
   g("uname").textContent=name;
   g("uavatar").textContent=(name[0]||"U").toUpperCase();
@@ -2382,22 +2438,64 @@ function getUltimasTallas(cNIT,cNombre){
   return tallas.length?tallas.join(" / "):null;
 }
 
+// Estado temporal para el remarketing en curso
+let _wspActual={nit:"",nom:"",num:"",tallas:null,tmplIdx:0};
+
 function wspRemarketing(nit,nom,tel){
   const limpio=String(tel||"").replace(/\D/g,"");
   if(!limpio||limpio.length<7){alert("Esta cliente no tiene teléfono registrado.");return}
   const num=limpio.length===8?"502"+limpio:limpio;
+  const tallas=getUltimasTallas(nit,nom);
+  _wspActual={nit,nom,num,tallas,tmplIdx:1}; // default plantilla 2 (índice 1)
+  // Poblar modal
+  g("wsp-tmpl-cliente").textContent=nom.split(" ")[0];
+  const optsDiv=g("wsp-tmpl-opts");
+  optsDiv.innerHTML=WSP_TEMPLATES.map((t,i)=>`
+    <button onclick="seleccionarTmpl(${i})" id="wsp-opt-${i}"
+      style="text-align:left;padding:12px 14px;border-radius:10px;border:2px solid ${i===1?'var(--rose)':'var(--border)'};
+      background:${i===1?'var(--rose-lt)':'var(--card)'};cursor:pointer;font-size:13px;font-weight:${i===1?'600':'400'}">
+      ${t.label}
+    </button>`).join("");
+  // Mostrar preview de la plantilla por defecto (2)
+  actualizarPreviewWsp(1);
+  g("m-wsp-tmpl").style.display="flex";
+}
+
+function seleccionarTmpl(idx){
+  _wspActual.tmplIdx=idx;
+  // Resaltar seleccionado
+  WSP_TEMPLATES.forEach((_,i)=>{
+    const btn=g(`wsp-opt-${i}`);if(!btn)return;
+    btn.style.borderColor=i===idx?"var(--rose)":"var(--border)";
+    btn.style.background=i===idx?"var(--rose-lt)":"var(--card)";
+    btn.style.fontWeight=i===idx?"600":"400";
+  });
+  actualizarPreviewWsp(idx);
+}
+
+function actualizarPreviewWsp(idx){
   const vnd=(me?.name||me?.username||"tu vendedora").split(" ")[0];
   const tienda=getNombreTienda();
-  const tallas=getUltimasTallas(nit,nom);
-  const opts=WSP_TEMPLATES.map((t,i)=>`${i+1}. ${t.label}`).join("\n");
-  const sel=prompt(`Selecciona el tipo de mensaje:\n\n${opts}\n\nEscribe el número (1, 2 o 3):`);
-  if(!sel)return;
-  const idx=(parseInt(sel)||2)-1;
-  const tmpl=WSP_TEMPLATES[Math.max(0,Math.min(idx,WSP_TEMPLATES.length-1))];
-  const msg=tmpl.msg(nom.split(" ")[0],vnd,tienda,tallas);
-  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
-  // Registrar fecha de contacto en Excel
-  registrarContactoExcel(nit,nom).then(()=>refreshData()).catch(e=>console.warn("Contacto no guardado:",e));
+  const tmpl=WSP_TEMPLATES[idx];
+  const msg=tmpl.msg(_wspActual.nom.split(" ")[0],vnd,tienda,_wspActual.tallas);
+  const prev=g("wsp-preview");
+  prev.style.display="block";
+  prev.textContent=msg;
+}
+
+function enviarWspRemarketing(){
+  // Abrir WhatsApp directamente desde el click del botón — sin popup bloqueado
+  const vnd=(me?.name||me?.username||"tu vendedora").split(" ")[0];
+  const tienda=getNombreTienda();
+  const tmpl=WSP_TEMPLATES[_wspActual.tmplIdx];
+  const msg=tmpl.msg(_wspActual.nom.split(" ")[0],vnd,tienda,_wspActual.tallas);
+  const url=`https://wa.me/${_wspActual.num}?text=${encodeURIComponent(msg)}`;
+  window.open(url,"_blank");
+  closeM("m-wsp-tmpl");
+  // Registrar contacto en Excel y actualizar tabla
+  registrarContactoExcel(_wspActual.nit,_wspActual.nom)
+    .then(()=>refreshData())
+    .catch(e=>console.warn("Contacto no guardado:",e.message));
 }
 
 // ── SEGUIMIENTO DE CONTACTOS EN EXCEL ────────────────────
