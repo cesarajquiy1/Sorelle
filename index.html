@@ -394,8 +394,8 @@ table.t tbody tr:last-child{border-bottom:none}
                   <input class="fc" id="v-dir" placeholder="Dirección de entrega"></div>
               </div>
               <div class="fr c3">
-                <div class="fg"><label class="fl">Vendedor *</label>
-                  <input class="fc" id="v-vend" placeholder="Nombre del vendedor"></div>
+                <div class="fg"><label class="fl">Vendedor</label>
+                  <input class="fc" id="v-vend" readonly style="background:var(--bone);color:var(--mink);cursor:default" title="Se asigna automáticamente según el usuario activo"></div>
                 <div class="fg"><label class="fl">Tipo de Envío</label>
                   <select class="fc" id="v-envio">
                     <option value="Tienda">Tienda (pickup)</option>
@@ -508,7 +508,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <div class="card">
         <div class="frow"><input class="fc" id="q-cli" placeholder="🔍 Buscar NIT o nombre..." oninput="renderCli()" style="flex:1"></div>
         <div class="tw"><table class="t">
-          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th># Ventas</th><th>Monto Total</th></tr></thead>
+          <thead><tr><th>NIT</th><th>Nombre</th><th>Teléfono</th><th>Dirección</th><th>Contactar</th></tr></thead>
           <tbody id="tb-cli"></tbody>
         </table></div>
       </div>
@@ -2259,18 +2259,54 @@ function verVenta(id){
 // ╔═══════════════════════════════════════════════╗
 // ║  CLIENTES                                    ║
 // ╚═══════════════════════════════════════════════╝
+// Plantillas de remarketing para WhatsApp
+const WSP_TEMPLATES=[
+  {
+    label:"Nueva colección 🆕",
+    msg:(nom,vnd)=>`Hola ${nom}! 👋 Soy ${vnd} de Sorelle.\n\nAcaba de llegar nuestra nueva colección y pensé inmediatamente en ti ✨\n\nTenemos estilos que te van a encantar — y como clienta especial, tienes prioridad para verlos antes que nadie.\n\n¿Te muestro las novedades? 🥿`
+  },
+  {
+    label:"Tallas limitadas ⚡",
+    msg:(nom,vnd)=>`${nom}! 😊 Soy ${vnd} de Sorelle.\n\nLlegaron nuevos modelos en las tallas que más te gustan y las existencias son muy limitadas 🔥\n\nNo queremos que te quedes sin tu par favorito.\n\n¿Te cuento cuáles hay disponibles?`
+  },
+  {
+    label:"Oferta exclusiva 🎁",
+    msg:(nom,vnd)=>`Hola ${nom}! 💕 Habla ${vnd} de Sorelle.\n\nTenemos una selección especial solo para nuestras clientas — precios especiales en estilos exclusivos, por tiempo muy limitado ⏳\n\n¿Te interesa que te la comparta antes de que se agote?`
+  }
+];
+
+function wspRemarketing(nom,tel){
+  const limpio=String(tel||"").replace(/\D/g,"");
+  if(!limpio||limpio.length<7){alert("Esta cliente no tiene teléfono registrado.");return}
+  const num=limpio.length===8?"502"+limpio:limpio;
+  const vnd=me?.name||me?.username||"tu vendedora";
+  // Mostrar selector de plantilla
+  const opts=WSP_TEMPLATES.map((t,i)=>`${i+1}. ${t.label}`).join("\n");
+  const sel=prompt(`Selecciona el tipo de mensaje:\n\n${opts}\n\nEscribe el número (1, 2 o 3):`);
+  const idx=(parseInt(sel)||1)-1;
+  const tmpl=WSP_TEMPLATES[Math.max(0,Math.min(idx,WSP_TEMPLATES.length-1))];
+  const msg=tmpl.msg(nom.split(" ")[0],vnd); // usar solo primer nombre
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
+}
+
 function renderCli(){
   const q=(g("q-cli").value||"").toLowerCase();
   const ls=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
   const tb=g("tb-cli");
-  if(!ls.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><i class="bi bi-people"></i>Sin clientes — se registran automáticamente al confirmar ventas</div></td></tr>`;return}
+  if(!ls.length){tb.innerHTML=`<tr><td colspan="5"><div class="empty"><i class="bi bi-people"></i>Sin clientes — se registran automáticamente al confirmar ventas</div></td></tr>`;return}
   tb.innerHTML=ls.map(c=>`<tr>
-    <td><code style="font-size:12px">${c.NIT}</code></td>
-    <td style="font-weight:500">${c.Nombre}</td>
+    <td><code style="font-size:12px">${c.NIT||"CF"}</code></td>
+    <td style="font-weight:500">${c.Nombre||"—"}</td>
     <td style="color:var(--mink)">${c.Telefono||"—"}</td>
-    <td style="font-size:12px;color:var(--mink)">${c.Direccion||"—"}</td>
-    <td style="text-align:center"><span class="b bc">${c.TotalVentas||0}</span></td>
-    <td style="font-weight:600">${Q(c.MontoTotal||0)}</td>
+    <td style="font-size:12px;color:var(--mink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Direccion||"—"}</td>
+    <td>${c.Telefono?`
+      <button onclick="wspRemarketing('${(c.Nombre||"").replace(/'/g,"\\'")}','${c.Telefono}')"
+        style="display:flex;align-items:center;gap:5px;background:none;border:1.5px solid #25a244;color:#25a244;
+        border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#25a244"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Contactar
+      </button>`:`<span style="font-size:11px;color:var(--mink)">Sin tel.</span>`}
+    </td>
   </tr>`).join("");
 }
 
