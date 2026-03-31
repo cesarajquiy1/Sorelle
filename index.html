@@ -935,17 +935,19 @@ const CFG={
 };
 
 // Nombres de tablas en Excel — deben coincidir exactamente
-const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas"};
+const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas",CFG:"Configuracion"};
 
 // Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Categoria","Tipo","Cantidad","Fecha","Vendedor","ClienteNombre","PrecioUnit","Total","RefVenta"];
-const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas","MontoTotal"];
+const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas","MontoTotal","UltimoContacto"];
+const CCFG=["Clave","Valor","Usuario","FechaModificacion"];
 const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
 // Guarda los encabezados reales leídos del Excel
-let realHeaders={P:[],M:[],C:[],V:[],D:[]};
+let realHeaders={P:[],M:[],C:[],V:[],D:[],CFG:[]};
+let configs=[]; // filas de la tabla Configuracion
 
 // ╔═══════════════════════════════════════════════╗
 // ║  ESTADO GLOBAL                               ║
@@ -1028,15 +1030,65 @@ async function getToken(){
   }
 }
 
-// ── NOMBRE DE TIENDA POR USUARIO ─────────────────────────
-function getNombreTienda(){
-  const key=`sorelle_tienda_${me?.username||""}`;
-  return localStorage.getItem(key)||CFG.store;
+// ── CONFIGURACIÓN POR USUARIO EN EXCEL ───────────────────
+function getConfig(clave){
+  const user=(me?.username||"").toLowerCase();
+  // Buscar por usuario específico primero, luego sin usuario (global)
+  const fila=configs.find(c=>
+    String(c.Clave||"")===clave&&String(c.Usuario||"").toLowerCase()===user
+  )||configs.find(c=>String(c.Clave||"")===clave&&!c.Usuario);
+  return fila?String(fila.Valor||""):"";
 }
+
+function aplicarConfigUsuario(){
+  const tienda=getConfig("NombreTienda");
+  const sbTienda=g("sb-tienda");
+  if(sbTienda&&tienda)sbTienda.value=tienda;
+}
+
+async function guardarConfig(clave,valor){
+  const user=me?.username||"";
+  const fila=configs.find(c=>
+    String(c.Clave||"")===clave&&
+    String(c.Usuario||"").toLowerCase()===user.toLowerCase()
+  );
+  const fecha=localDate();
+  try{
+    if(fila){
+      // Actualizar fila existente
+      const raw=[...fila._raw];
+      const hdrs=CCFG;
+      const vi=hdrs.indexOf("Valor"),fi=hdrs.indexOf("FechaModificacion");
+      if(vi>=0&&vi<raw.length)raw[vi]=valor;
+      if(fi>=0&&fi<raw.length)raw[fi]=fecha;
+      await updRaw(TBL.CFG,fila._i,raw);
+    }else{
+      // Nueva fila
+      await addRow(TBL.CFG,[clave,valor,user,fecha]);
+    }
+    // Actualizar cache local
+    await refreshData();
+  }catch(e){
+    console.warn("Error guardando config:",e.message);
+    // Fallback a localStorage si Excel falla
+    localStorage.setItem(`sorelle_cfg_${clave}_${user}`,valor);
+  }
+}
+
+function getNombreTienda(){
+  const excel=getConfig("NombreTienda");
+  if(excel)return excel;
+  // Fallback localStorage (compatibilidad)
+  const lsKey=`sorelle_tienda_${me?.username||""}`;
+  return localStorage.getItem(lsKey)||CFG.store;
+}
+
 function guardarNombreTienda(val){
-  const key=`sorelle_tienda_${me?.username||""}`;
-  if(val.trim())localStorage.setItem(key,val.trim());
-  else localStorage.removeItem(key);
+  // Guardar en Excel con debounce para no hacer una llamada por cada tecla
+  clearTimeout(guardarNombreTienda._t);
+  guardarNombreTienda._t=setTimeout(()=>{
+    if(val.trim())guardarConfig("NombreTienda",val.trim());
+  },1500);
 }
 
 function signOut(){
@@ -1355,7 +1407,7 @@ async function refreshData(){
       getHeaders(TBL.V).catch(()=>CV),
       getHeaders(TBL.D).catch(()=>CD)
     ]);
-    realHeaders={P:hP.length?hP:CP,M:hM.length?hM:CM,C:hC.length?hC:CC,V:hV.length?hV:CV,D:hD.length?hD:CD};
+    realHeaders={P:hP.length?hP:CP,M:hM.length?hM:CM,C:hC.length?hC:CC,V:hV.length?hV:CV,D:hD.length?hD:CD,CFG:CCFG};
 
     showLo("Cargando productos...");
     // Leer tabla Productos primero y capturar error real
@@ -1375,17 +1427,21 @@ async function refreshData(){
     }
 
     showLo("Cargando ventas y movimientos...");
-    const [mr,cr,vr,dr]=await Promise.all([
+    const [mr,cr,vr,dr,cfgr]=await Promise.all([
       getRows(TBL.M).catch(()=>[]),
       getRows(TBL.C).catch(()=>[]),
       getRows(TBL.V).catch(()=>[]),
-      getRows(TBL.D).catch(()=>[])
+      getRows(TBL.D).catch(()=>[]),
+      getRows(TBL.CFG).catch(()=>[]) // Configuracion — silencioso si no existe aún
     ]);
     prods=toObjs(pr,realHeaders.P);
     movs=toObjs(mr,realHeaders.M);
     clis=toObjs(cr,realHeaders.C);
     vtas=toObjs(vr,realHeaders.V);
     dtls=toObjs(dr,realHeaders.D);
+    configs=toObjs(cfgr,CCFG);
+    // Aplicar configuración del usuario actual
+    aplicarConfigUsuario();
     fillUI();
   }catch(e){
     hideLo();
@@ -1635,7 +1691,7 @@ const ci=esCF
   })
   :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
       // Detectar si la tabla tiene la columna MontoTotal (6 cols) o no (5 cols)
-      const tieneMontoTotal=realHeaders.C&&realHeaders.C.includes("MontoTotal");
+      const tieneMontoTotal=realHeaders.C&&(realHeaders.C.includes("MontoTotal")||realHeaders.C.length>=6);
       if(ci<0){
         // Nuevo cliente
         const cVals=[nit||"CF", nom, tel||"", dir||"", 1];
@@ -2335,48 +2391,58 @@ function wspRemarketing(nit,nom,tel){
   const tallas=getUltimasTallas(nit,nom);
   const opts=WSP_TEMPLATES.map((t,i)=>`${i+1}. ${t.label}`).join("\n");
   const sel=prompt(`Selecciona el tipo de mensaje:\n\n${opts}\n\nEscribe el número (1, 2 o 3):`);
-  if(!sel)return; // canceló
+  if(!sel)return;
   const idx=(parseInt(sel)||2)-1;
   const tmpl=WSP_TEMPLATES[Math.max(0,Math.min(idx,WSP_TEMPLATES.length-1))];
   const msg=tmpl.msg(nom.split(" ")[0],vnd,tienda,tallas);
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
-  // Registrar contacto
-  registrarContacto(nit,nom);
-  // Actualizar botón visualmente sin recargar toda la tabla
-  setTimeout(()=>renderCli(),300);
+  // Registrar fecha de contacto en Excel
+  registrarContactoExcel(nit,nom).then(()=>refreshData()).catch(e=>console.warn("Contacto no guardado:",e));
 }
 
-// ── SEGUIMIENTO DE CONTACTOS (localStorage) ───────────────
-function getContactosKey(){return`sorelle_contactados_${me?.username||""}`}
-
-function registrarContacto(nit,nom){
-  const key=getContactosKey();
-  const data=JSON.parse(localStorage.getItem(key)||"{}");
-  const id=String(nit||nom||"").trim()||nom;
-  data[id]=Date.now();
-  localStorage.setItem(key,JSON.stringify(data));
+// ── SEGUIMIENTO DE CONTACTOS EN EXCEL ────────────────────
+async function registrarContactoExcel(nit,nom){
+  const ci=clis.findIndex(c=>
+    String(c.NIT||"").toUpperCase()===String(nit||"").toUpperCase()||
+    (c.Nombre||"").toLowerCase()===(nom||"").toLowerCase()
+  );
+  if(ci<0)return;
+  const c=clis[ci];
+  const hdrs=realHeaders.C&&realHeaders.C.length?realHeaders.C:CC;
+  const raw=[...c._raw];
+  // Expandir el raw si no tiene columna UltimoContacto aún
+  const ui=hdrs.indexOf("UltimoContacto");
+  if(ui>=0){
+    while(raw.length<=ui)raw.push("");
+    raw[ui]=localDate();
+  }else{
+    // Columna no existe aún en Excel — ignorar silenciosamente
+    return;
+  }
+  await updRaw(TBL.C,c._i,raw);
 }
 
-function getEstadoContacto(nit,nom){
-  const key=getContactosKey();
-  const data=JSON.parse(localStorage.getItem(key)||"{}");
-  const id=String(nit||"").trim()||nom||"";
-  const ts=data[id];
-  if(!ts)return"nuevo"; // nunca contactado
-  const dias=(Date.now()-ts)/(1000*60*60*24);
-  if(dias<30)return"reciente"; // contactado hace menos de 30 días
-  return"renovar"; // más de 30 días → volver a contactar
+function getEstadoContacto(c){
+  const uc=String(c.UltimoContacto||"").trim();
+  if(!uc||uc==="0"||uc.length<8)return"nuevo";
+  // Puede venir como serial de Excel o como string YYYY-MM-DD
+  const fecha=excelToDate(isNaN(+uc)?uc:+uc)||uc.slice(0,10);
+  const dias=(Date.now()-new Date(fecha).getTime())/(1000*60*60*24);
+  if(isNaN(dias))return"nuevo";
+  if(dias<30)return"reciente";
+  return"renovar";
 }
 
-function btnContactar(nit,nom,tel){
+function btnContactar(nit,nom,tel,c){
   const nitStr=String(nit||"").replace(/'/g,"\\'");
   const nomStr=String(nom||"").replace(/'/g,"\\'");
   const telStr=String(tel||"");
-  const estado=getEstadoContacto(String(nit||""),nom);
+  const estado=getEstadoContacto(c);
+  const uc=c.UltimoContacto?`Último contacto: ${fd(excelToDate(c.UltimoContacto)||c.UltimoContacto)}`:"";
   const cfg={
-    nuevo:  {color:"#25a244",bg:"none",label:"Contactar",title:""},
-    reciente:{color:"#fff",bg:"#25a244",label:"✓ Contactado",title:"Contactado hace menos de 30 días — toca para volver a enviar"},
-    renovar: {color:"#e0923b",bg:"none",label:"↻ Recontactar",title:"Han pasado más de 30 días — momento de volver a contactar"}
+    nuevo:   {color:"#25a244",bg:"none",       label:"Contactar",      title:""},
+    reciente:{color:"#fff",   bg:"#25a244",     label:"✓ Contactado",   title:uc+" (menos de 30 días)"},
+    renovar: {color:"#e0923b",bg:"none",        label:"↻ Recontactar",  title:uc+" — han pasado +30 días"}
   }[estado];
   const wsp=`<svg width="13" height="13" viewBox="0 0 24 24" fill="${cfg.color}"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`;
   return`<button onclick="wspRemarketing('${nitStr}','${nomStr}','${telStr}')" title="${cfg.title}"
@@ -2407,7 +2473,7 @@ function renderCli(){
     <td style="font-weight:500">${c.Nombre||"—"}</td>
     <td style="color:var(--mink)">${String(c.Telefono||"—")}</td>
     <td style="font-size:12px;color:var(--mink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${String(c.Direccion||"—")}</td>
-    <td>${c.Telefono?btnContactar(c.NIT,c.Nombre,c.Telefono):`<span style="font-size:11px;color:var(--mink)">Sin tel.</span>`}
+    <td>${c.Telefono?btnContactar(c.NIT,c.Nombre,c.Telefono,c):`<span style="font-size:11px;color:var(--mink)">Sin tel.</span>`}
     </td>
   </tr>`).join("");
 }
