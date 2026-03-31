@@ -539,7 +539,7 @@ table.t tbody tr:last-child{border-bottom:none}
           </select></div>
         </div>
         <div class="tw"><table class="t">
-          <thead><tr><th>Fecha</th><th>Producto</th><th>SKU</th><th>Tipo</th><th>Cant.</th><th>Vendedor</th><th>P.Unit</th><th>Total</th><th>Ref.</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Producto</th><th>SKU</th><th>Categoría</th><th>Tipo</th><th>Cant.</th><th>Cliente</th><th>Vendedor</th><th>P.Unit</th><th>Total</th><th>Ref.</th></tr></thead>
           <tbody id="tb-mov"></tbody>
         </table></div>
       </div>
@@ -837,7 +837,7 @@ const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVenta
 
 // Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
-const CM=["ID","SKU","Producto","Tipo","Cantidad","Fecha","Vendedor","PrecioUnit","Total","RefVenta"];
+const CM=["ID","SKU","Producto","Categoria","Tipo","Cantidad","Fecha","Vendedor","ClienteNombre","PrecioUnit","Total","RefVenta"];
 const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas","MontoTotal"];
 const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
@@ -1412,7 +1412,7 @@ function addCart(){
   const tot=(ix>=0?cart[ix].q:0)+q;
   if(tot>(+p.StockActual||0)){alert("Stock insuficiente. Disponible: "+p.StockActual);return}
   if(ix>=0){cart[ix].q+=q;cart[ix].sub=cart[ix].q*cart[ix].pv}
-  else cart.push({idx:+i,sku:p.SKU,nom:p.Nombre,tal:p.Talla,q,pv:+p.PrecioVenta||0,sub:(+p.PrecioVenta||0)*q});
+  else cart.push({idx:+i,sku:p.SKU,nom:p.Nombre,cat:p.Categoria||"",tal:p.Talla,q,pv:+p.PrecioVenta||0,sub:(+p.PrecioVenta||0)*q});
   g("v-prod").value="";
   g("v-busq").value="";
   g("v-cant").value="1";
@@ -1422,16 +1422,37 @@ function addCart(){
 function renderCart(){
   g("cart-cnt").textContent=cart.length+" item"+(cart.length!==1?"s":"");
   const bd=g("cart-body");
-  if(!cart.length){bd.innerHTML='<div class="ce">Sin productos aún</div>';calcTot();return}
+  if(!cart.length){bd.innerHTML='<div class="ce">Sin productos aún</div>';calcTot();actualizarNotas();return}
   bd.innerHTML=cart.map((it,i)=>`
     <div class="ci">
       <button class="cdel" onclick="rmCart(${i})"><i class="bi bi-x-circle"></i></button>
-      <div style="flex:1"><div class="cnm">${it.nom}</div><div class="csb">T${it.tal} · ${Q(it.pv)}</div></div>
+      <div style="flex:1"><div class="cnm">${it.nom}</div><div class="csb">${it.cat?it.cat+' · ':''}T${it.tal} · ${Q(it.pv)}</div></div>
       <input type="number" class="cqt" value="${it.q}" min="1" onchange="updCart(${i},this.value)">
       <div class="ctt">${Q(it.sub)}</div>
     </div>`).join("");
   calcTot();
+  actualizarNotas();
 }
+
+function actualizarNotas(){
+  const campo=g("v-notas");if(!campo)return;
+  if(!cart.length){campo.value="";return}
+  // Generar referencia de SKUs — SKU·TallaXcantidad separados por coma
+  const skuRef=cart.map(it=>`${it.sku}·T${it.tal}${it.q>1?'×'+it.q:''}`).join(", ");
+  // Solo sobrescribir si el campo está vacío o contiene solo referencias previas (empieza con SKU)
+  const actual=campo.value.trim();
+  // Detectar si el contenido actual es solo una referencia de SKUs (no nota manual)
+  const esSoloRef=/^[A-Za-z0-9\-·T×, ]+$/.test(actual)&&!actual.includes(" ");
+  if(!actual||esSoloRef||actual.startsWith(cart[0]?.sku||"__")){
+    campo.value=skuRef;
+  }else{
+    // Hay una nota manual — agregar referencia al inicio si no está ya
+    if(!actual.startsWith(skuRef)){
+      campo.value=skuRef+" | "+actual.replace(/^[A-Za-z0-9\-·T×, ]+ \| /,"");
+    }
+  }
+}
+
 function rmCart(i){cart.splice(i,1);renderCart()}
 function updCart(i,v){
   const q=parseInt(v)||1;const p=prods[cart[i].idx];
@@ -1474,7 +1495,7 @@ async function confirmarVenta(){
 
     showLo("Actualizando inventario (3/4)...");
     for(const it of snap){
-      await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,"Salida",it.q,fh,vnd,it.pv,it.sub,id]);
+      await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,it.cat||"","Salida",it.q,fh,vnd,nom,it.pv,it.sub,id]);
       const p=prods[it.idx];
       await updStock(p,Math.max(0,(+p.StockActual||0)-it.q));
     }
@@ -1673,8 +1694,8 @@ async function confirmarDevolucion(){
         const nuevoStock=(+p.StockActual||0)+(+it.q||0);
         await updStock(p,nuevoStock);
         // Registrar con precio de venta real para que el movimiento sea claro
-        await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,"Entrada",it.q,fh,
-          me.name||"Admin",it.pv||0,(it.pv||0)*(it.q||0),"Dev.Parcial:"+v.id]);
+        await addRow(TBL.M,[Date.now()+"",it.sku,it.nom,it.cat||"","Entrada",it.q,fh,
+          me.name||"Admin","",it.pv||0,(it.pv||0)*(it.q||0),"Dev.Parcial:"+v.id]);
       }
     }
     closeM("m-dev");
@@ -1768,8 +1789,8 @@ async function cambiarEstado(ventaId, nuevoEstado, selectEl){
         if(p){
           const nuevoStock=(+p.StockActual||0)+(+d.Cantidad||0);
           await updStock(p,nuevoStock);
-          await addRow(TBL.M,[Date.now()+"",d.SKU,d.Producto,"Entrada",d.Cantidad,fh,
-            me.name||"Admin",0,0,"Devolución VTA: "+ventaId]);
+          await addRow(TBL.M,[Date.now()+"",d.SKU,d.Producto,"","Entrada",d.Cantidad,fh,
+            me.name||"Admin","",0,0,"Devolución VTA: "+ventaId]);
         }
       }
       toast("🔄 Stock devuelto al inventario","#7c6cd1");
@@ -2189,8 +2210,8 @@ async function saveProd(){
       const vals=hdrs.map(h=>newVals.hasOwnProperty(h)?newVals[h]:"");
       await addRow(TBL.P,vals);
       if(parseInt(g("p-stk").value)>0){
-        await addRow(TBL.M,[Date.now()+"",sku,nom,"Entrada",parseInt(g("p-stk").value),
-          localDate(),me.name||"Admin",parseFloat(g("p-cos").value)||0,0,"Stock inicial"]);
+        await addRow(TBL.M,[Date.now()+"",sku,nom,g("p-cat").value||"","Entrada",parseInt(g("p-stk").value),
+          localDate(),me.name||"Admin","",parseFloat(g("p-cos").value)||0,0,"Stock inicial"]);
       }
     }
     closeM("m-prod");await refreshData();
@@ -2212,8 +2233,10 @@ function renderMov(){
     <td style="white-space:nowrap;font-size:12px">${fd(m.Fecha)}</td>
     <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${m.Producto}</td>
     <td><code style="font-size:11px">${m.SKU}</code></td>
+    <td style="font-size:12px;color:var(--mink)">${m.Categoria||"—"}</td>
     <td><span class="b ${m.Tipo==="Entrada"?"be":"bs"}">${m.Tipo}</span></td>
     <td style="text-align:center;font-weight:600">${m.Cantidad}</td>
+    <td style="font-size:12px;color:var(--mink)">${m.ClienteNombre||"—"}</td>
     <td style="font-size:12px;color:var(--mink)">${m.Vendedor||"—"}</td>
     <td>${Q(m.PrecioUnit)}</td>
     <td style="font-weight:600">${Q(m.Total)}</td>
@@ -2329,8 +2352,8 @@ async function importCSV(){
         if(ci>=0&&ci<raw.length)raw[ci]=+costoPromedio.toFixed(2);
         await updRaw(TBL.P,existe._i,raw);
         if(cantNueva>0){
-          await addRow(TBL.M,[Date.now()+"",existe.SKU,existe.Nombre,"Entrada",
-            cantNueva,localDate(),me.name||"Admin",costoNuevo,
+          await addRow(TBL.M,[Date.now()+"",existe.SKU,existe.Nombre,existe.Categoria||"","Entrada",
+            cantNueva,localDate(),me.name||"Admin","",costoNuevo,
             cantNueva*costoNuevo,"Reposición CSV"]);
         }
         actualizados++;
@@ -2341,8 +2364,8 @@ async function importCSV(){
           cantNueva,parseInt(r.StockMinimo)||3,"",true];
         await addRow(TBL.P,vals);
         if(cantNueva>0){
-          await addRow(TBL.M,[Date.now()+"",r.SKU,r.Nombre,"Entrada",
-            cantNueva,localDate(),me.name||"Admin",costoNuevo,
+          await addRow(TBL.M,[Date.now()+"",r.SKU,r.Nombre,r.Categoria||"","Entrada",
+            cantNueva,localDate(),me.name||"Admin","",costoNuevo,
             cantNueva*costoNuevo,"Stock inicial CSV"]);
         }
         nuevos++;
