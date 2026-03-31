@@ -211,8 +211,15 @@ table.t tbody tr:last-child{border-bottom:none}
   box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;max-width:320px;
   pointer-events:none}
 
-@media print{body *{visibility:hidden}#rcp,#rcp *{visibility:visible}
-  #rcp{position:fixed;inset:0;background:#fff;padding:32px}}
+@media print{
+  body *{visibility:hidden}
+  #rcp,#rcp *{visibility:visible}
+  #rcp{position:fixed;inset:0;background:#fff;padding:8px}
+  #lbl-print,#lbl-print *{visibility:visible}
+  #lbl-print{position:fixed;inset:0;background:#fff}
+}
+@page{size:4in 4in;margin:4mm}
+@page lbl{size:2in 1in;margin:1mm}
 
 /* ── MOBILE MENU TOGGLE ── */
 #mob-bar{display:none;position:fixed;top:0;left:0;right:0;height:54px;
@@ -414,10 +421,16 @@ table.t tbody tr:last-child{border-bottom:none}
               <!-- Búsqueda de producto -->
               <div class="fg" style="margin-bottom:10px;position:relative">
                 <label class="fl">Buscar Producto</label>
-                <div style="position:relative">
-                  <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mink);font-size:14px;pointer-events:none"></i>
-                  <input class="fc" id="v-busq" placeholder="SKU, nombre o iniciales..." oninput="filtrarProds()" autocomplete="off"
-                    style="padding-left:34px" onfocus="mostrarResultados()" onblur="setTimeout(ocultarResultados,200)">
+                <div style="position:relative;display:flex;gap:8px">
+                  <div style="position:relative;flex:1">
+                    <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mink);font-size:14px;pointer-events:none"></i>
+                    <input class="fc" id="v-busq" placeholder="SKU, nombre o iniciales..." oninput="filtrarProds()" autocomplete="off"
+                      style="padding-left:34px" onfocus="mostrarResultados()" onblur="setTimeout(ocultarResultados,200)">
+                  </div>
+                  <button class="bg" onclick="abrirEscaner()" title="Escanear código de barras"
+                    style="padding:0 14px;flex-shrink:0;color:var(--purple);border-color:var(--purple)">
+                    <i class="bi bi-upc-scan" style="font-size:18px"></i>
+                  </button>
                 </div>
                 <!-- Dropdown de resultados -->
                 <div id="v-resultados" style="display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border:1.5px solid var(--rose);border-top:none;border-radius:0 0 10px 10px;max-height:320px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rose) var(--bone);z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.12)"></div>
@@ -510,6 +523,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <div class="ph">
         <div class="pt">Productos</div>
         <div style="display:flex;gap:8px" id="prod-admin-btns">
+          <button class="bg" onclick="abrirEtiquetas()" style="color:var(--purple);border-color:var(--purple)"><i class="bi bi-upc-scan"></i>Etiquetas</button>
           <button class="bp b" onclick="openCSV()"><i class="bi bi-file-earmark-arrow-up"></i>Carga CSV</button>
           <button class="bp" onclick="openProd()"><i class="bi bi-plus-lg"></i>Nuevo</button>
         </div>
@@ -805,6 +819,87 @@ table.t tbody tr:last-child{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL ETIQUETAS CON CÓDIGO DE BARRAS -->
+<div id="m-etiquetas" class="mo" onclick="bgcl(event,'m-etiquetas')" style="display:none">
+  <div class="mb mlg">
+    <div class="mhd">
+      <div class="mti" style="color:var(--purple)"><i class="bi bi-upc"></i> Etiquetas con Código de Barras</div>
+      <button class="bx" onclick="closeM('m-etiquetas')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <!-- Filtros -->
+      <div class="fr c3" style="margin-bottom:14px;gap:10px">
+        <div class="fg" style="margin:0">
+          <label class="fl">Buscar producto</label>
+          <input class="fc" id="etq-busq" placeholder="SKU o nombre..." oninput="filtrarEtiquetas()">
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl">Categoría</label>
+          <select class="fc" id="etq-cat" onchange="filtrarEtiquetas()"><option value="">Todas</option></select>
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl">Mostrar</label>
+          <select class="fc" id="etq-filtro" onchange="filtrarEtiquetas()">
+            <option value="todos">Todos los productos</option>
+            <option value="bajo">Solo stock bajo</option>
+          </select>
+        </div>
+      </div>
+      <!-- Previsualización de etiquetas -->
+      <div style="background:var(--bone);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--mink);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+          <span id="etq-count">0 etiquetas seleccionadas</span>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+            <input type="checkbox" id="etq-todos" onchange="seleccionarTodasEtq(this.checked)"> Seleccionar todas
+          </label>
+        </div>
+        <div id="etq-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rose) var(--bone)"></div>
+      </div>
+      <div style="font-size:12px;color:var(--mink);background:#f0ecff;border-radius:8px;padding:10px 12px">
+        <i class="bi bi-info-circle"></i> Las etiquetas se imprimen en formato <b>2×1 pulgada</b> continuo para impresora de rollo. Cada etiqueta incluye el código de barras, SKU, nombre y talla del producto.
+      </div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-etiquetas')">Cerrar</button>
+      <button class="bp" style="background:var(--purple)" onclick="imprimirEtiquetas()">
+        <i class="bi bi-printer"></i>Imprimir Etiquetas
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENEDOR OCULTO PARA IMPRESIÓN DE ETIQUETAS -->
+<div id="lbl-print" style="display:none"></div>
+
+<!-- MODAL ESCÁNER DE CÓDIGO DE BARRAS -->
+<div id="m-escaner" class="mo" onclick="bgcl(event,'m-escaner')" style="display:none">
+  <div class="mb msm">
+    <div class="mhd">
+      <div class="mti" style="color:var(--purple)"><i class="bi bi-upc-scan"></i> Escanear Código</div>
+      <button class="bx" onclick="cerrarEscaner()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div style="position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:1;margin-bottom:12px">
+        <video id="scan-video" style="width:100%;height:100%;object-fit:cover" autoplay muted playsinline></video>
+        <!-- Marco de escaneo -->
+        <div style="position:absolute;inset:20%;border:2px solid var(--rose);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5)"></div>
+        <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;color:rgba(255,255,255,.8);font-size:12px">Apunta al código de barras</div>
+      </div>
+      <div id="scan-resultado" style="display:none;background:var(--bone);border-radius:10px;padding:12px;font-size:13px;text-align:center">
+        <div id="scan-sku" style="font-family:monospace;font-size:16px;font-weight:700;color:var(--rose);margin-bottom:4px"></div>
+        <div id="scan-nom" style="color:var(--mink)"></div>
+      </div>
+      <div id="scan-error" style="display:none;background:#fce4e8;border-radius:10px;padding:12px;font-size:13px;text-align:center;color:#a02040"></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="cerrarEscaner()">Cancelar</button>
+      <button class="bp" id="btn-scan-agregar" style="display:none" onclick="agregarDesdeEscaner()">
+        <i class="bi bi-cart-plus"></i>Agregar al carrito
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Cargar dependencias dinámicamente ──────────────────────
 function ldScr(src){return new Promise((ok,err)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=err;document.head.appendChild(s)})}
@@ -812,6 +907,7 @@ async function init(){
   try{await ldScr("https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js")}
   catch{await ldScr("https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js")}
   await ldScr("https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js");
+  await ldScr("https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js");
   startApp();
 }
 window.addEventListener('DOMContentLoaded',init);
@@ -1581,20 +1677,22 @@ function showRecibo(v){
       ${v.dir?`<div style="grid-column:1/-1"><b>Dir:</b> ${v.dir}</div>`:""}
       <div><b>Envío:</b> ${v.envio}</div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px">
       <thead><tr style="background:#f5f0e8">
-        <th style="padding:5px;text-align:left">Producto</th>
-        <th style="padding:5px;text-align:center">T.</th>
-        <th style="padding:5px;text-align:center">Cant.</th>
-        <th style="padding:5px;text-align:right">P.Unit</th>
-        <th style="padding:5px;text-align:right">Total</th>
+        <th style="padding:4px;text-align:left">Producto</th>
+        <th style="padding:4px;text-align:left">Cat.</th>
+        <th style="padding:4px;text-align:center">T.</th>
+        <th style="padding:4px;text-align:center">Cant.</th>
+        <th style="padding:4px;text-align:right">P.Unit</th>
+        <th style="padding:4px;text-align:right">Total</th>
       </tr></thead>
       <tbody>${v.items.map(it=>`<tr style="border-bottom:1px solid #eee">
-        <td style="padding:5px">${it.nom}</td>
-        <td style="padding:5px;text-align:center">${it.tal}</td>
-        <td style="padding:5px;text-align:center">${it.q}</td>
-        <td style="padding:5px;text-align:right">${Q(it.pv)}</td>
-        <td style="padding:5px;text-align:right">${Q(it.sub)}</td>
+        <td style="padding:4px;font-weight:500">${it.nom}</td>
+        <td style="padding:4px;color:#888;font-size:10px">${it.cat||"—"}</td>
+        <td style="padding:4px;text-align:center">${it.tal}</td>
+        <td style="padding:4px;text-align:center">${it.q}</td>
+        <td style="padding:4px;text-align:right">${Q(it.pv)}</td>
+        <td style="padding:4px;text-align:right">${Q(it.sub)}</td>
       </tr>`).join("")}</tbody>
     </table>
     <div style="text-align:right;font-size:13px">
@@ -2451,6 +2549,225 @@ function bgcl(e,id){if(e.target.id===id)closeM(id)}
 function toast(msg,color){
   const t=g("toast");t.textContent=msg;t.style.background=color||"#333";
   t.style.opacity="1";clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity="0",4000);
+}
+
+// ── CÓDIGOS DE BARRAS — ETIQUETAS ────────────────────────
+function abrirEtiquetas(){
+  g("m-etiquetas").style.display="flex";
+  // Poblar filtro de categorías
+  const cats=[...new Set(prods.map(p=>p.Categoria).filter(Boolean))].sort();
+  const sel=g("etq-cat");
+  sel.innerHTML='<option value="">Todas</option>';
+  cats.forEach(c=>{const o=new Option(c,c);sel.appendChild(o)});
+  filtrarEtiquetas();
+}
+
+let etqSeleccionadas=new Set();
+
+function filtrarEtiquetas(){
+  const q=(g("etq-busq").value||"").toLowerCase();
+  const cat=g("etq-cat").value;
+  const filtro=g("etq-filtro").value;
+  let lista=prods.filter(p=>{
+    const activo=p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE";
+    if(!activo)return false;
+    if(cat&&p.Categoria!==cat)return false;
+    if(filtro==="bajo"&&(+p.StockActual||0)>(+p.StockMinimo||0))return false;
+    if(q&&!String(p.SKU||"").toLowerCase().includes(q)&&!String(p.Nombre||"").toLowerCase().includes(q))return false;
+    return true;
+  });
+  const grid=g("etq-grid");
+  grid.innerHTML=lista.map((p,i)=>`
+    <div style="background:#fff;border-radius:8px;padding:10px;border:2px solid ${etqSeleccionadas.has(p.SKU)?'var(--purple)':'var(--border)'};cursor:pointer;transition:border-color .15s"
+      onclick="toggleEtq('${p.SKU}',this)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <input type="checkbox" ${etqSeleccionadas.has(p.SKU)?'checked':''} style="accent-color:var(--purple)" onclick="event.stopPropagation()">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.Nombre}</div>
+          <div style="font-size:10px;color:var(--mink)">T${p.Talla} · ${p.SKU}</div>
+        </div>
+      </div>
+      <svg id="bc-prev-${p.SKU.replace(/[^a-z0-9]/gi,'_')}" style="width:100%;height:36px"></svg>
+    </div>`).join("");
+  // Generar barcodes en preview
+  if(typeof JsBarcode!=="undefined"){
+    lista.forEach(p=>{
+      const svgId="bc-prev-"+p.SKU.replace(/[^a-z0-9]/gi,'_');
+      const el=g(svgId);
+      if(el&&p.SKU){
+        try{JsBarcode(el,p.SKU,{format:"CODE128",displayValue:false,height:30,margin:2,background:"transparent"});}
+        catch(e){el.innerHTML=`<text y="20" font-size="10" fill="#999">SKU inválido</text>`;}
+      }
+    });
+  }
+  actualizarConteoEtq();
+}
+
+function toggleEtq(sku,card){
+  const cb=card.querySelector("input[type=checkbox]");
+  if(etqSeleccionadas.has(sku)){etqSeleccionadas.delete(sku);card.style.borderColor="var(--border)";if(cb)cb.checked=false;}
+  else{etqSeleccionadas.add(sku);card.style.borderColor="var(--purple)";if(cb)cb.checked=true;}
+  actualizarConteoEtq();
+}
+
+function seleccionarTodasEtq(sel){
+  const cards=g("etq-grid").querySelectorAll("div[onclick]");
+  cards.forEach(card=>{
+    const cb=card.querySelector("input[type=checkbox]");
+    const skuEl=card.querySelector("div[style*='font-size:10px']");
+    if(!skuEl)return;
+    const sku=skuEl.textContent.split("·").pop().trim();
+    if(sel){etqSeleccionadas.add(sku);card.style.borderColor="var(--purple)";if(cb)cb.checked=true;}
+    else{etqSeleccionadas.delete(sku);card.style.borderColor="var(--border)";if(cb)cb.checked=false;}
+  });
+  actualizarConteoEtq();
+}
+
+function actualizarConteoEtq(){
+  g("etq-count").textContent=`${etqSeleccionadas.size} etiqueta${etqSeleccionadas.size!==1?"s":""} seleccionada${etqSeleccionadas.size!==1?"s":""}`;
+}
+
+function imprimirEtiquetas(){
+  if(!etqSeleccionadas.size){alert("Selecciona al menos una etiqueta para imprimir.");return}
+  const selProds=prods.filter(p=>etqSeleccionadas.has(p.SKU));
+  const cont=g("lbl-print");
+  // CSS específico para rollo continuo 2x1 pulgadas
+  cont.innerHTML=`
+    <style>
+      @media print{
+        body *{visibility:hidden!important}
+        #lbl-print,#lbl-print *{visibility:visible!important}
+        #lbl-print{display:block!important;position:fixed;inset:0}
+        @page{size:2in 1in;margin:0}
+      }
+      .etq-item{
+        width:2in;height:1in;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        padding:2mm;box-sizing:border-box;
+        page-break-after:always;
+        font-family:'DM Sans',Arial,sans-serif;
+      }
+      .etq-item svg{max-width:100%;height:0.5in}
+      .etq-item .etq-sku{font-size:7pt;font-weight:700;letter-spacing:.5px;margin:1mm 0 0}
+      .etq-item .etq-nom{font-size:6pt;color:#555;margin:0}
+    </style>
+    ${selProds.map(p=>`
+      <div class="etq-item">
+        <svg id="etq-svg-${p.SKU.replace(/[^a-z0-9]/gi,'_')}"></svg>
+        <div class="etq-sku">${p.SKU}</div>
+        <div class="etq-nom">${p.Nombre} · T${p.Talla}</div>
+      </div>`).join("")}`;
+  cont.style.display="block";
+  // Generar barcodes en las etiquetas
+  selProds.forEach(p=>{
+    const svgId="etq-svg-"+p.SKU.replace(/[^a-z0-9]/gi,'_');
+    const el=document.getElementById(svgId);
+    if(el&&p.SKU){
+      try{JsBarcode(el,p.SKU,{format:"CODE128",displayValue:false,height:50,margin:1,background:"transparent"});}
+      catch(e){}
+    }
+  });
+  setTimeout(()=>{window.print();setTimeout(()=>{cont.style.display="none";cont.innerHTML=""},500);},300);
+}
+
+// ── ESCÁNER DE CÓDIGO DE BARRAS ───────────────────────────
+let scanStream=null;let scanInterval=null;let scanFound=null;
+
+async function abrirEscaner(){
+  scanFound=null;
+  g("scan-resultado").style.display="none";
+  g("scan-error").style.display="none";
+  g("btn-scan-agregar").style.display="none";
+  g("m-escaner").style.display="flex";
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}
+    });
+    const video=g("scan-video");
+    video.srcObject=scanStream;
+    await video.play();
+    iniciarDeteccion(video);
+  }catch(e){
+    g("scan-error").style.display="block";
+    g("scan-error").textContent="No se pudo acceder a la cámara: "+e.message;
+  }
+}
+
+function iniciarDeteccion(video){
+  // Intentar BarcodeDetector nativo (Chrome Android, Edge)
+  if("BarcodeDetector" in window){
+    const detector=new BarcodeDetector({formats:["code_128","code_39","ean_13","ean_8","upc_a","upc_e"]});
+    scanInterval=setInterval(async()=>{
+      if(!scanStream||scanFound)return;
+      try{
+        const codes=await detector.detect(video);
+        if(codes.length){procesarSKU(codes[0].rawValue);}
+      }catch(e){}
+    },300);
+  }else{
+    // Fallback: canvas + ZXing via jsdelivr
+    ldScr("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/umd/index.min.js").then(()=>{
+      const canvas=document.createElement("canvas");
+      const hints=new Map();
+      const reader=new ZXingBrowser.BrowserMultiFormatReader();
+      scanInterval=setInterval(()=>{
+        if(!scanStream||scanFound)return;
+        canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(video,0,0);
+        try{
+          const result=reader.decodeFromCanvas(canvas);
+          if(result)procesarSKU(result.getText());
+        }catch(e){}
+      },300);
+    }).catch(()=>{
+      g("scan-error").style.display="block";
+      g("scan-error").textContent="Tu navegador no soporta el escaneo de códigos. Usa Chrome en Android para esta función.";
+    });
+  }
+}
+
+function procesarSKU(rawSku){
+  if(scanFound)return;
+  const sku=rawSku.trim().toUpperCase();
+  // Buscar en productos
+  const match=prods.find(p=>String(p.SKU||"").trim().toUpperCase()===sku&&(+p.StockActual||0)>0);
+  if(match){
+    scanFound=match;
+    detenerEscaner();
+    g("scan-resultado").style.display="block";
+    g("scan-sku").textContent=match.SKU;
+    g("scan-nom").textContent=`${match.Nombre} · T${match.Talla}${match.Color?" · "+match.Color:""} · Stock: ${match.StockActual} · ${Q(match.PrecioVenta)}`;
+    g("btn-scan-agregar").style.display="flex";
+  }else{
+    // SKU no encontrado o sin stock
+    g("scan-error").style.display="block";
+    g("scan-error").textContent=`SKU "${sku}" no encontrado o sin stock disponible`;
+    setTimeout(()=>{g("scan-error").style.display="none";},2000);
+  }
+}
+
+function detenerEscaner(){
+  if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
+}
+
+function cerrarEscaner(){
+  detenerEscaner();
+  scanFound=null;
+  closeM("m-escaner");
+}
+
+function agregarDesdeEscaner(){
+  if(!scanFound)return;
+  const p=scanFound;
+  const idx=prods.indexOf(p);
+  if(idx<0)return;
+  // Seleccionar en el buscador y agregar al carrito
+  seleccionarProd(idx);
+  cerrarEscaner();
+  // Agregar automáticamente con cantidad 1
+  setTimeout(()=>{addCart();},100);
 }
 
 // ── PWA MANIFEST (generado dinámicamente) ─────────────
