@@ -838,10 +838,11 @@ table.t tbody tr:last-child{border-bottom:none}
           <select class="fc" id="etq-cat" onchange="filtrarEtiquetas()"><option value="">Todas</option></select>
         </div>
         <div class="fg" style="margin:0">
-          <label class="fl">Mostrar</label>
-          <select class="fc" id="etq-filtro" onchange="filtrarEtiquetas()">
-            <option value="todos">Todos los productos</option>
-            <option value="bajo">Solo stock bajo</option>
+          <label class="fl">Cantidad por defecto</label>
+          <select class="fc" id="etq-qty-mode" onchange="filtrarEtiquetas()">
+            <option value="1">1 etiqueta c/u</option>
+            <option value="stock">Según stock actual</option>
+            <option value="manual">Ingresar manualmente</option>
           </select>
         </div>
       </div>
@@ -853,10 +854,10 @@ table.t tbody tr:last-child{border-bottom:none}
             <input type="checkbox" id="etq-todos" onchange="seleccionarTodasEtq(this.checked)"> Seleccionar todas
           </label>
         </div>
-        <div id="etq-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rose) var(--bone)"></div>
+        <div id="etq-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--rose) var(--bone)"></div>
       </div>
       <div style="font-size:12px;color:var(--mink);background:#f0ecff;border-radius:8px;padding:10px 12px">
-        <i class="bi bi-info-circle"></i> Las etiquetas se imprimen en formato <b>2×1 pulgada</b> continuo para impresora de rollo. Cada etiqueta incluye el código de barras, SKU, nombre y talla del producto.
+        <i class="bi bi-info-circle"></i> Etiquetas en formato <b>2×1 pulgada</b> para impresora de rollo. Incluye código de barras, SKU, nombre y talla.
       </div>
     </div>
     <div class="mft">
@@ -2552,122 +2553,172 @@ function toast(msg,color){
 }
 
 // ── CÓDIGOS DE BARRAS — ETIQUETAS ────────────────────────
+// Map: SKU → cantidad de etiquetas a imprimir
+let etqSeleccionadas=new Map();
+
 function abrirEtiquetas(){
+  etqSeleccionadas.clear();
   g("m-etiquetas").style.display="flex";
-  // Poblar filtro de categorías
   const cats=[...new Set(prods.map(p=>p.Categoria).filter(Boolean))].sort();
   const sel=g("etq-cat");
   sel.innerHTML='<option value="">Todas</option>';
   cats.forEach(c=>{const o=new Option(c,c);sel.appendChild(o)});
+  g("etq-todos").checked=false;
   filtrarEtiquetas();
 }
-
-let etqSeleccionadas=new Set();
 
 function filtrarEtiquetas(){
   const q=(g("etq-busq").value||"").toLowerCase();
   const cat=g("etq-cat").value;
-  const filtro=g("etq-filtro").value;
-  let lista=prods.filter(p=>{
+  const qtyMode=g("etq-qty-mode").value;
+  const lista=prods.filter(p=>{
     const activo=p.Activo!==false&&p.Activo!==0&&String(p.Activo).toUpperCase()!=="FALSE";
-    if(!activo)return false;
+    if(!activo||!p.SKU)return false;
     if(cat&&p.Categoria!==cat)return false;
-    if(filtro==="bajo"&&(+p.StockActual||0)>(+p.StockMinimo||0))return false;
-    if(q&&!String(p.SKU||"").toLowerCase().includes(q)&&!String(p.Nombre||"").toLowerCase().includes(q))return false;
+    if(q&&!String(p.SKU).toLowerCase().includes(q)&&!String(p.Nombre||"").toLowerCase().includes(q))return false;
     return true;
   });
   const grid=g("etq-grid");
-  grid.innerHTML=lista.map((p,i)=>`
-    <div style="background:#fff;border-radius:8px;padding:10px;border:2px solid ${etqSeleccionadas.has(p.SKU)?'var(--purple)':'var(--border)'};cursor:pointer;transition:border-color .15s"
-      onclick="toggleEtq('${p.SKU}',this)">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <input type="checkbox" ${etqSeleccionadas.has(p.SKU)?'checked':''} style="accent-color:var(--purple)" onclick="event.stopPropagation()">
+  grid.innerHTML=lista.map(p=>{
+    const sku=String(p.SKU);
+    const sel=etqSeleccionadas.has(sku);
+    const stockQty=Math.max(1,+p.StockActual||1);
+    const qty=etqSeleccionadas.get(sku)||(qtyMode==="stock"?stockQty:1);
+    return`<div class="etq-card" data-sku="${sku.replace(/"/g,'&quot;')}"
+      style="background:#fff;border-radius:8px;padding:10px;border:2px solid ${sel?'var(--purple)':'var(--border)'};transition:border-color .15s">
+      <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+        <input type="checkbox" class="etq-cb" data-sku="${sku.replace(/"/g,'&quot;')}" ${sel?'checked':''}
+          style="accent-color:var(--purple);margin-top:2px;cursor:pointer;width:15px;height:15px;flex-shrink:0"
+          onchange="toggleEtqCb(this)">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.Nombre}</div>
-          <div style="font-size:10px;color:var(--mink)">T${p.Talla} · ${p.SKU}</div>
+          <div style="font-size:10px;color:var(--mink)">T${p.Talla} · <code>${sku}</code></div>
         </div>
       </div>
-      <svg id="bc-prev-${p.SKU.replace(/[^a-z0-9]/gi,'_')}" style="width:100%;height:36px"></svg>
-    </div>`).join("");
+      <svg class="etq-bc-prev" data-sku="${sku.replace(/"/g,'&quot;')}" style="width:100%;height:32px;display:block"></svg>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+        <label style="font-size:10px;color:var(--mink);flex-shrink:0">Cant:</label>
+        <input type="number" class="etq-qty" data-sku="${sku.replace(/"/g,'&quot;')}" value="${qty}" min="1" max="999"
+          style="width:60px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center"
+          onchange="actualizarCantEtq(this)" onclick="event.stopPropagation()">
+        ${qtyMode==="stock"?`<span style="font-size:10px;color:var(--mink)">(stock: ${p.StockActual})</span>`:''}
+      </div>
+    </div>`;
+  }).join("");
+
   // Generar barcodes en preview
   if(typeof JsBarcode!=="undefined"){
-    lista.forEach(p=>{
-      const svgId="bc-prev-"+p.SKU.replace(/[^a-z0-9]/gi,'_');
-      const el=g(svgId);
-      if(el&&p.SKU){
-        try{JsBarcode(el,p.SKU,{format:"CODE128",displayValue:false,height:30,margin:2,background:"transparent"});}
-        catch(e){el.innerHTML=`<text y="20" font-size="10" fill="#999">SKU inválido</text>`;}
-      }
+    grid.querySelectorAll(".etq-bc-prev").forEach(svg=>{
+      const sku=svg.dataset.sku;
+      if(sku)try{JsBarcode(svg,sku,{format:"CODE128",displayValue:false,height:28,margin:1,background:"transparent"});}catch(e){}
     });
   }
   actualizarConteoEtq();
 }
 
-function toggleEtq(sku,card){
-  const cb=card.querySelector("input[type=checkbox]");
-  if(etqSeleccionadas.has(sku)){etqSeleccionadas.delete(sku);card.style.borderColor="var(--border)";if(cb)cb.checked=false;}
-  else{etqSeleccionadas.add(sku);card.style.borderColor="var(--purple)";if(cb)cb.checked=true;}
+function toggleEtqCb(cb){
+  const sku=cb.dataset.sku;
+  const card=cb.closest(".etq-card");
+  const qtyInput=card.querySelector(".etq-qty");
+  const qty=parseInt(qtyInput?.value)||1;
+  if(cb.checked){
+    etqSeleccionadas.set(sku,qty);
+    card.style.borderColor="var(--purple)";
+  }else{
+    etqSeleccionadas.delete(sku);
+    card.style.borderColor="var(--border)";
+  }
   actualizarConteoEtq();
+  // Actualizar estado del checkbox "todos"
+  const total=g("etq-grid").querySelectorAll(".etq-cb").length;
+  g("etq-todos").checked=etqSeleccionadas.size===total&&total>0;
+  g("etq-todos").indeterminate=etqSeleccionadas.size>0&&etqSeleccionadas.size<total;
 }
 
-function seleccionarTodasEtq(sel){
-  const cards=g("etq-grid").querySelectorAll("div[onclick]");
-  cards.forEach(card=>{
-    const cb=card.querySelector("input[type=checkbox]");
-    const skuEl=card.querySelector("div[style*='font-size:10px']");
-    if(!skuEl)return;
-    const sku=skuEl.textContent.split("·").pop().trim();
-    if(sel){etqSeleccionadas.add(sku);card.style.borderColor="var(--purple)";if(cb)cb.checked=true;}
-    else{etqSeleccionadas.delete(sku);card.style.borderColor="var(--border)";if(cb)cb.checked=false;}
+function actualizarCantEtq(input){
+  const sku=input.dataset.sku;
+  const qty=Math.max(1,parseInt(input.value)||1);
+  input.value=qty;
+  if(etqSeleccionadas.has(sku))etqSeleccionadas.set(sku,qty);
+}
+
+function seleccionarTodasEtq(checked){
+  const qtyMode=g("etq-qty-mode").value;
+  g("etq-grid").querySelectorAll(".etq-card").forEach(card=>{
+    const sku=card.dataset.sku;
+    const cb=card.querySelector(".etq-cb");
+    const qtyInput=card.querySelector(".etq-qty");
+    const qty=parseInt(qtyInput?.value)||1;
+    if(checked){
+      etqSeleccionadas.set(sku,qty);
+      card.style.borderColor="var(--purple)";
+      if(cb)cb.checked=true;
+    }else{
+      etqSeleccionadas.delete(sku);
+      card.style.borderColor="var(--border)";
+      if(cb)cb.checked=false;
+    }
   });
   actualizarConteoEtq();
 }
 
 function actualizarConteoEtq(){
-  g("etq-count").textContent=`${etqSeleccionadas.size} etiqueta${etqSeleccionadas.size!==1?"s":""} seleccionada${etqSeleccionadas.size!==1?"s":""}`;
+  const total=Array.from(etqSeleccionadas.values()).reduce((s,q)=>s+q,0);
+  const prods=etqSeleccionadas.size;
+  g("etq-count").textContent=`${prods} producto${prods!==1?"s":""} · ${total} etiqueta${total!==1?"s":""}`;
 }
 
 function imprimirEtiquetas(){
-  if(!etqSeleccionadas.size){alert("Selecciona al menos una etiqueta para imprimir.");return}
-  const selProds=prods.filter(p=>etqSeleccionadas.has(p.SKU));
-  const cont=g("lbl-print");
-  // CSS específico para rollo continuo 2x1 pulgadas
-  cont.innerHTML=`
-    <style>
-      @media print{
-        body *{visibility:hidden!important}
-        #lbl-print,#lbl-print *{visibility:visible!important}
-        #lbl-print{display:block!important;position:fixed;inset:0}
-        @page{size:2in 1in;margin:0}
-      }
-      .etq-item{
-        width:2in;height:1in;
-        display:flex;flex-direction:column;align-items:center;justify-content:center;
-        padding:2mm;box-sizing:border-box;
-        page-break-after:always;
-        font-family:'DM Sans',Arial,sans-serif;
-      }
-      .etq-item svg{max-width:100%;height:0.5in}
-      .etq-item .etq-sku{font-size:7pt;font-weight:700;letter-spacing:.5px;margin:1mm 0 0}
-      .etq-item .etq-nom{font-size:6pt;color:#555;margin:0}
-    </style>
-    ${selProds.map(p=>`
-      <div class="etq-item">
-        <svg id="etq-svg-${p.SKU.replace(/[^a-z0-9]/gi,'_')}"></svg>
-        <div class="etq-sku">${p.SKU}</div>
-        <div class="etq-nom">${p.Nombre} · T${p.Talla}</div>
-      </div>`).join("")}`;
-  cont.style.display="block";
-  // Generar barcodes en las etiquetas
-  selProds.forEach(p=>{
-    const svgId="etq-svg-"+p.SKU.replace(/[^a-z0-9]/gi,'_');
-    const el=document.getElementById(svgId);
-    if(el&&p.SKU){
-      try{JsBarcode(el,p.SKU,{format:"CODE128",displayValue:false,height:50,margin:1,background:"transparent"});}
-      catch(e){}
-    }
+  if(!etqSeleccionadas.size){alert("Selecciona al menos un producto para imprimir.");return}
+  // Construir lista expandida: si qty=3, repetir 3 veces
+  const items=[];
+  etqSeleccionadas.forEach((qty,sku)=>{
+    const p=prods.find(x=>String(x.SKU)===sku);
+    if(p)for(let i=0;i<qty;i++)items.push(p);
   });
-  setTimeout(()=>{window.print();setTimeout(()=>{cont.style.display="none";cont.innerHTML=""},500);},300);
+  if(!items.length){alert("No se encontraron productos válidos.");return}
+
+  // Construir HTML para iframe — más confiable que manipular @page en el documento principal
+  const etqHtml=items.map(p=>`
+    <div class="etq">
+      <svg id="b${items.indexOf(p)}_${p.SKU.replace(/[^a-z0-9]/gi,'_')}"></svg>
+      <div class="sku">${p.SKU}</div>
+      <div class="nom">${p.Nombre} · T${p.Talla}</div>
+    </div>`).join("");
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @page{size:2in 1in;margin:0}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{width:2in;background:#fff}
+    .etq{width:2in;height:1in;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;padding:1.5mm;page-break-after:always;overflow:hidden}
+    .etq svg{width:1.9in;height:0.55in;display:block}
+    .sku{font-family:Arial,sans-serif;font-size:7pt;font-weight:700;letter-spacing:.4px;margin-top:1mm;text-align:center}
+    .nom{font-family:Arial,sans-serif;font-size:6pt;color:#444;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:1.9in}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+  </head><body>${etqHtml}
+  <script>
+  window.onload=function(){
+    ${items.map((p,i)=>{
+      const svgId=`b${i}_${p.SKU.replace(/[^a-z0-9]/gi,'_')}`;
+      return`try{JsBarcode(document.getElementById('${svgId}'),'${p.SKU}',{format:'CODE128',displayValue:false,height:50,margin:1,background:'transparent'});}catch(e){}`;
+    }).join('\n    ')}
+    setTimeout(function(){window.print();},800);
+  };
+  <\/script></body></html>`;
+
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;right:-9999px;top:-9999px;width:2in;height:1in;border:none";
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  // Limpiar iframe después de imprimir
+  const limpiar=()=>{setTimeout(()=>{iframe.remove();},1000);};
+  iframe.contentWindow.addEventListener("afterprint",limpiar);
+  setTimeout(limpiar,10000); // fallback cleanup
 }
 
 // ── ESCÁNER DE CÓDIGO DE BARRAS ───────────────────────────
