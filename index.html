@@ -338,6 +338,15 @@ table.t tbody tr:last-child{border-bottom:none}
     </div>
     <div class="sb-bot">
       <div class="urow"><div class="uav" id="uavatar">?</div><div id="uname">...</div></div>
+      <div style="padding:4px 12px 6px">
+        <div style="font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Mi tienda</div>
+        <input id="sb-tienda" placeholder="Nombre de tu tienda..." maxlength="40"
+          style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:7px;
+          padding:5px 8px;color:rgba(255,255,255,.8);font-size:11px;outline:none"
+          oninput="guardarNombreTienda(this.value)"
+          onfocus="this.style.borderColor='var(--rose)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'">
+        <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:3px">Aparece en recibos y WhatsApp</div>
+      </div>
       <button class="btn-so" onclick="signOut()"><i class="bi bi-box-arrow-right"></i>Cerrar sesión</button>
     </div>
   </nav>
@@ -1019,6 +1028,17 @@ async function getToken(){
   }
 }
 
+// ── NOMBRE DE TIENDA POR USUARIO ─────────────────────────
+function getNombreTienda(){
+  const key=`sorelle_tienda_${me?.username||""}`;
+  return localStorage.getItem(key)||CFG.store;
+}
+function guardarNombreTienda(val){
+  const key=`sorelle_tienda_${me?.username||""}`;
+  if(val.trim())localStorage.setItem(key,val.trim());
+  else localStorage.removeItem(key);
+}
+
 function signOut(){
   try{if(mApp)mApp.logoutPopup();}catch(e){}
   cleanMsal();mReady=false;mApp=null;me=null;tok=null;
@@ -1040,14 +1060,25 @@ function bootApp(){
   g("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
 
   const admin=isAdmin();
-  ["nav-historial","nav-clientes","nav-movimientos","nav-reportes",
+  ["nav-historial","nav-movimientos","nav-reportes",
    "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
     const e=g(id);if(e)e.style.display=admin?"":"none";
   });
+  // Clientes: visible para todos (vendedoras ven solo los suyos)
+  const navCli=g("nav-clientes");if(navCli)navCli.style.display="";
   const prodBtns=g("prod-admin-btns");
   if(prodBtns)prodBtns.style.display=admin?"flex":"none";
   const mobHist=g("mob-historial");if(mobHist)mobHist.style.display=admin?"":"none";
   const mobRep=g("mob-reportes");if(mobRep)mobRep.style.display=admin?"":"none";
+  // Cargar nombre de tienda guardado para este usuario
+  const tiendaKey=`sorelle_tienda_${me?.username||""}`;
+  const tiendaGuardada=localStorage.getItem(tiendaKey)||"";
+  const sbTienda=g("sb-tienda");
+  if(sbTienda)sbTienda.value=tiendaGuardada;
+
+  // Cargar nombre de tienda guardado para este usuario
+  const tiendaKeyMob=`sorelle_tienda_${me?.username||""}`;
+
   if(!admin){
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".ni").forEach(b=>b.classList.remove("active"));
@@ -1663,7 +1694,7 @@ function showRecibo(v){
   if(btnDev) btnDev.style.display=(isAdmin()&&v.items&&v.items.length)?"flex":"none";
   const html=`
     <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:14px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${CFG.store}</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">getNombreTienda()</div>
       <div style="font-size:11px;color:#777;margin-top:6px">RECIBO DE VENTA</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:14px;font-size:12px">
@@ -1734,7 +1765,7 @@ function printRcp(){
   </style>
   </head><body>
   <div class="hd">
-    <div class="store">${CFG.store}</div>
+    <div class="store">getNombreTienda()</div>
     <div class="sub">RECIBO DE VENTA</div>
   </div>
   <div class="info">
@@ -1795,7 +1826,7 @@ function enviarWsp(){
   // Construir mensaje de texto plano
   const lineas=v.items.map(it=>`  • ${it.nom} T${it.tal} ×${it.q} = ${Q(it.sub)}`).join("\n");
   const msg=[
-    `*${CFG.store}*`,
+    `*getNombreTienda()*`,
     `*Recibo de Venta* — ${v.id}`,
     `Fecha: ${fd(v.fh)}`,
     `Cliente: ${v.nom}`,
@@ -2263,44 +2294,84 @@ function verVenta(id){
 const WSP_TEMPLATES=[
   {
     label:"Nueva colección 🆕",
-    msg:(nom,vnd)=>`Hola ${nom}! 👋 Soy ${vnd} de Sorelle.\n\nAcaba de llegar nuestra nueva colección y pensé inmediatamente en ti ✨\n\nTenemos estilos que te van a encantar — y como clienta especial, tienes prioridad para verlos antes que nadie.\n\n¿Te muestro las novedades? 🥿`
+    msg:(nom,vnd,tienda,tallas)=>`Hola ${nom}! 👋 Soy ${vnd} de ${tienda}.\n\nAcaba de llegar nuestra nueva colección y pensé inmediatamente en ti ✨\n\nTenemos estilos que te van a encantar — y como clienta especial, tienes prioridad para verlos antes que nadie.\n\n¿Te muestro las novedades? 🥿`
   },
   {
     label:"Tallas limitadas ⚡",
-    msg:(nom,vnd)=>`${nom}! 😊 Soy ${vnd} de Sorelle.\n\nLlegaron nuevos modelos en las tallas que más te gustan y las existencias son muy limitadas 🔥\n\nNo queremos que te quedes sin tu par favorito.\n\n¿Te cuento cuáles hay disponibles?`
+    msg:(nom,vnd,tienda,tallas)=>`${nom}! 😊 Soy ${vnd} de ${tienda}.\n\nLlegaron nuevos modelos${tallas?` en talla ${tallas} que es la tuya`:""} y las existencias son muy limitadas 🔥\n\nNo queremos que te quedes sin tu par favorito.\n\n¿Te cuento cuáles hay disponibles?`
   },
   {
     label:"Oferta exclusiva 🎁",
-    msg:(nom,vnd)=>`Hola ${nom}! 💕 Habla ${vnd} de Sorelle.\n\nTenemos una selección especial solo para nuestras clientas — precios especiales en estilos exclusivos, por tiempo muy limitado ⏳\n\n¿Te interesa que te la comparta antes de que se agote?`
+    msg:(nom,vnd,tienda,tallas)=>`Hola ${nom}! 💕 Habla ${vnd} de ${tienda}.\n\nTenemos una selección especial solo para nuestras clientas — precios especiales en estilos exclusivos, por tiempo muy limitado ⏳\n\n¿Te interesa que te la comparta antes de que se agote?`
   }
 ];
 
-function wspRemarketing(nom,tel){
+function getUltimasTallas(cNIT,cNombre){
+  // Buscar ventas de este cliente
+  const misVtas=vtas.filter(v=>
+    (cNIT&&cNIT!=="CF"&&String(v.ClienteNIT||"").toUpperCase()===String(cNIT).toUpperCase())||
+    String(v.ClienteNombre||"").toLowerCase()===String(cNombre||"").toLowerCase()
+  );
+  if(!misVtas.length)return null;
+  // Ordenar por fecha descendente y tomar la más reciente
+  misVtas.sort((a,b)=>{
+    const fa=excelToDate(a.Fecha)||"";const fb=excelToDate(b.Fecha)||"";
+    return fb.localeCompare(fa);
+  });
+  const ultima=misVtas[0];
+  const dets=dtls.filter(d=>d.VentaID===ultima.ID);
+  if(!dets.length)return null;
+  // Obtener tallas únicas
+  const tallas=[...new Set(dets.map(d=>d.Talla).filter(Boolean))];
+  return tallas.length?tallas.join(" / "):null;
+}
+
+function wspRemarketing(nit,nom,tel){
   const limpio=String(tel||"").replace(/\D/g,"");
   if(!limpio||limpio.length<7){alert("Esta cliente no tiene teléfono registrado.");return}
   const num=limpio.length===8?"502"+limpio:limpio;
-  const vnd=me?.name||me?.username||"tu vendedora";
+  const vnd=(me?.name||me?.username||"tu vendedora").split(" ")[0];
+  const tienda=getNombreTienda();
+  const tallas=getUltimasTallas(nit,nom);
   // Mostrar selector de plantilla
   const opts=WSP_TEMPLATES.map((t,i)=>`${i+1}. ${t.label}`).join("\n");
   const sel=prompt(`Selecciona el tipo de mensaje:\n\n${opts}\n\nEscribe el número (1, 2 o 3):`);
-  const idx=(parseInt(sel)||1)-1;
+  const idx=(parseInt(sel)||2)-1; // default plantilla 2
   const tmpl=WSP_TEMPLATES[Math.max(0,Math.min(idx,WSP_TEMPLATES.length-1))];
-  const msg=tmpl.msg(nom.split(" ")[0],vnd); // usar solo primer nombre
+  const msg=tmpl.msg(nom.split(" ")[0],vnd,tienda,tallas);
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
 }
 
 function renderCli(){
   const q=(g("q-cli").value||"").toLowerCase();
-  const ls=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
+  const admin=isAdmin();
+  const myName=(me?.name||me?.username||"").toLowerCase();
+  let ls=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
+  // Vendedoras ven solo sus clientes (los que aparecen en sus ventas)
+  if(!admin){
+    const misNITs=new Set(
+      vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>String(v.ClienteNIT||"").toUpperCase())
+    );
+    const misNombres=new Set(
+      vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>(v.ClienteNombre||"").toLowerCase())
+    );
+    ls=ls.filter(c=>
+      misNITs.has(String(c.NIT||"").toUpperCase())||
+      misNombres.has((c.Nombre||"").toLowerCase())
+    );
+  }
   const tb=g("tb-cli");
-  if(!ls.length){tb.innerHTML=`<tr><td colspan="5"><div class="empty"><i class="bi bi-people"></i>Sin clientes — se registran automáticamente al confirmar ventas</div></td></tr>`;return}
+  if(!ls.length){
+    tb.innerHTML=`<tr><td colspan="5"><div class="empty"><i class="bi bi-people"></i>${admin?"Sin clientes registrados":"Aún no tienes clientes — se registran al confirmar ventas"}</div></td></tr>`;
+    return;
+  }
   tb.innerHTML=ls.map(c=>`<tr>
     <td><code style="font-size:12px">${c.NIT||"CF"}</code></td>
     <td style="font-weight:500">${c.Nombre||"—"}</td>
     <td style="color:var(--mink)">${c.Telefono||"—"}</td>
     <td style="font-size:12px;color:var(--mink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Direccion||"—"}</td>
     <td>${c.Telefono?`
-      <button onclick="wspRemarketing('${(c.Nombre||"").replace(/'/g,"\\'")}','${c.Telefono}')"
+      <button onclick="wspRemarketing('${(c.NIT||"").replace(/'/g,"\\'")}','${(c.Nombre||"").replace(/'/g,"\\'")}','${c.Telefono}')"
         style="display:flex;align-items:center;gap:5px;background:none;border:1.5px solid #25a244;color:#25a244;
         border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="#25a244"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
