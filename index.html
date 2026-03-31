@@ -2333,32 +2333,69 @@ function wspRemarketing(nit,nom,tel){
   const vnd=(me?.name||me?.username||"tu vendedora").split(" ")[0];
   const tienda=getNombreTienda();
   const tallas=getUltimasTallas(nit,nom);
-  // Mostrar selector de plantilla
   const opts=WSP_TEMPLATES.map((t,i)=>`${i+1}. ${t.label}`).join("\n");
   const sel=prompt(`Selecciona el tipo de mensaje:\n\n${opts}\n\nEscribe el número (1, 2 o 3):`);
-  const idx=(parseInt(sel)||2)-1; // default plantilla 2
+  if(!sel)return; // canceló
+  const idx=(parseInt(sel)||2)-1;
   const tmpl=WSP_TEMPLATES[Math.max(0,Math.min(idx,WSP_TEMPLATES.length-1))];
   const msg=tmpl.msg(nom.split(" ")[0],vnd,tienda,tallas);
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
+  // Registrar contacto
+  registrarContacto(nit,nom);
+  // Actualizar botón visualmente sin recargar toda la tabla
+  setTimeout(()=>renderCli(),300);
+}
+
+// ── SEGUIMIENTO DE CONTACTOS (localStorage) ───────────────
+function getContactosKey(){return`sorelle_contactados_${me?.username||""}`}
+
+function registrarContacto(nit,nom){
+  const key=getContactosKey();
+  const data=JSON.parse(localStorage.getItem(key)||"{}");
+  const id=String(nit||nom||"").trim()||nom;
+  data[id]=Date.now();
+  localStorage.setItem(key,JSON.stringify(data));
+}
+
+function getEstadoContacto(nit,nom){
+  const key=getContactosKey();
+  const data=JSON.parse(localStorage.getItem(key)||"{}");
+  const id=String(nit||"").trim()||nom||"";
+  const ts=data[id];
+  if(!ts)return"nuevo"; // nunca contactado
+  const dias=(Date.now()-ts)/(1000*60*60*24);
+  if(dias<30)return"reciente"; // contactado hace menos de 30 días
+  return"renovar"; // más de 30 días → volver a contactar
+}
+
+function btnContactar(nit,nom,tel){
+  const nitStr=String(nit||"").replace(/'/g,"\\'");
+  const nomStr=String(nom||"").replace(/'/g,"\\'");
+  const telStr=String(tel||"");
+  const estado=getEstadoContacto(String(nit||""),nom);
+  const cfg={
+    nuevo:  {color:"#25a244",bg:"none",label:"Contactar",title:""},
+    reciente:{color:"#fff",bg:"#25a244",label:"✓ Contactado",title:"Contactado hace menos de 30 días — toca para volver a enviar"},
+    renovar: {color:"#e0923b",bg:"none",label:"↻ Recontactar",title:"Han pasado más de 30 días — momento de volver a contactar"}
+  }[estado];
+  const wsp=`<svg width="13" height="13" viewBox="0 0 24 24" fill="${cfg.color}"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`;
+  return`<button onclick="wspRemarketing('${nitStr}','${nomStr}','${telStr}')" title="${cfg.title}"
+    style="display:flex;align-items:center;gap:5px;background:${cfg.bg};border:1.5px solid ${estado==="reciente"?"#25a244":cfg.color};color:${cfg.color};
+    border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+    ${wsp}${cfg.label}</button>`;
 }
 
 function renderCli(){
   const q=(g("q-cli").value||"").toLowerCase();
   const admin=isAdmin();
   const myName=(me?.name||me?.username||"").toLowerCase();
-  let ls=clis.filter(c=>!q||(c.NIT||"").toLowerCase().includes(q)||(c.Nombre||"").toLowerCase().includes(q));
-  // Vendedoras ven solo sus clientes (los que aparecen en sus ventas)
+  // Convertir NIT a string siempre para evitar error .replace en números
+  let ls=clis.map(c=>({...c,NIT:String(c.NIT||""),Nombre:String(c.Nombre||"")}))
+    .filter(c=>!q||c.NIT.toLowerCase().includes(q)||c.Nombre.toLowerCase().includes(q));
   if(!admin){
-    const misNITs=new Set(
-      vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>String(v.ClienteNIT||"").toUpperCase())
-    );
-    const misNombres=new Set(
-      vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>(v.ClienteNombre||"").toLowerCase())
-    );
-    ls=ls.filter(c=>
-      misNITs.has(String(c.NIT||"").toUpperCase())||
-      misNombres.has((c.Nombre||"").toLowerCase())
-    );
+    const misNITs=new Set(vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>String(v.ClienteNIT||"").toUpperCase()));
+    const misNombres=new Set(vtas.filter(v=>(v.Vendedor||"").toLowerCase()===myName).map(v=>(v.ClienteNombre||"").toLowerCase()));
+    ls=ls.filter(c=>misNITs.has(c.NIT.toUpperCase())||misNombres.has(c.Nombre.toLowerCase()));
   }
   const tb=g("tb-cli");
   if(!ls.length){
@@ -2368,15 +2405,9 @@ function renderCli(){
   tb.innerHTML=ls.map(c=>`<tr>
     <td><code style="font-size:12px">${c.NIT||"CF"}</code></td>
     <td style="font-weight:500">${c.Nombre||"—"}</td>
-    <td style="color:var(--mink)">${c.Telefono||"—"}</td>
-    <td style="font-size:12px;color:var(--mink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.Direccion||"—"}</td>
-    <td>${c.Telefono?`
-      <button onclick="wspRemarketing('${(c.NIT||"").replace(/'/g,"\\'")}','${(c.Nombre||"").replace(/'/g,"\\'")}','${c.Telefono}')"
-        style="display:flex;align-items:center;gap:5px;background:none;border:1.5px solid #25a244;color:#25a244;
-        border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#25a244"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.118 1.535 5.845L.057 23.667a.5.5 0 0 0 .614.614l5.822-1.478A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.951 9.951 0 0 1-5.148-1.427l-.369-.219-3.816.968.984-3.817-.24-.38A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-        Contactar
-      </button>`:`<span style="font-size:11px;color:var(--mink)">Sin tel.</span>`}
+    <td style="color:var(--mink)">${String(c.Telefono||"—")}</td>
+    <td style="font-size:12px;color:var(--mink);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${String(c.Direccion||"—")}</td>
+    <td>${c.Telefono?btnContactar(c.NIT,c.Nombre,c.Telefono):`<span style="font-size:11px;color:var(--mink)">Sin tel.</span>`}
     </td>
   </tr>`).join("");
 }
