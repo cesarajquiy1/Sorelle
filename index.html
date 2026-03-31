@@ -2659,7 +2659,11 @@ function filtrarEtiquetas(){
     const sku=String(p.SKU);
     const sel=etqSeleccionadas.has(sku);
     const stockQty=Math.max(1,+p.StockActual||1);
-    const qty=etqSeleccionadas.get(sku)||(qtyMode==="stock"?stockQty:1);
+    // Calcular qty según modo — siempre actualizar si no es manual
+    let qty;
+    if(qtyMode==="stock"){qty=stockQty;if(sel)etqSeleccionadas.set(sku,qty);}
+    else if(qtyMode==="1"){qty=1;if(sel)etqSeleccionadas.set(sku,1);}
+    else qty=etqSeleccionadas.get(sku)||1; // manual: mantener valor previo
     return`<div class="etq-card" data-sku="${sku.replace(/"/g,'&quot;')}"
       style="background:#fff;border-radius:8px;padding:10px;border:2px solid ${sel?'var(--purple)':'var(--border)'};transition:border-color .15s">
       <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
@@ -2746,13 +2750,17 @@ function actualizarConteoEtq(){
 
 function imprimirEtiquetas(){
   if(!etqSeleccionadas.size){alert("Selecciona al menos un producto para imprimir.");return}
-  // Construir lista expandida: si qty=3, repetir 3 veces
+  // Leer cantidades directamente del DOM — siempre reflejan lo que el usuario ve
   const items=[];
-  etqSeleccionadas.forEach((qty,sku)=>{
+  g("etq-grid").querySelectorAll(".etq-card").forEach(card=>{
+    const cb=card.querySelector(".etq-cb");
+    if(!cb?.checked)return;
+    const sku=card.dataset.sku;
+    const qty=Math.max(1,parseInt(card.querySelector(".etq-qty")?.value)||1);
     const p=prods.find(x=>String(x.SKU)===sku);
     if(p)for(let i=0;i<qty;i++)items.push(p);
   });
-  if(!items.length){alert("No se encontraron productos válidos.");return}
+  if(!items.length){alert("No se encontraron productos seleccionados.");return}
 
   // Construir HTML para iframe con IDs únicos usando índice secuencial
   const etqHtml=items.map((p,i)=>`
