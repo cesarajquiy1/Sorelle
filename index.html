@@ -336,6 +336,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <button class="ni" id="nav-movimientos" data-page="movimientos" onclick="goPage(this)"><i class="bi bi-arrow-left-right"></i>Movimientos</button>
       <div class="sb-sec" id="nav-sec-analisis">Análisis</div>
       <button class="ni" id="nav-cobros" data-page="cobros" onclick="goPage(this)"><i class="bi bi-cash-coin"></i>Cobros</button>
+      <button class="ni" id="nav-flujo" data-page="flujo" onclick="goPage(this)"><i class="bi bi-arrow-left-right"></i>Flujo de Caja</button>
       <button class="ni" id="nav-reportes" data-page="reportes" onclick="goPage(this)"><i class="bi bi-bar-chart-line"></i>Reportes</button>
     </div>
     <div class="sb-bot">
@@ -653,6 +654,71 @@ table.t tbody tr:last-child{border-bottom:none}
       </div>
     </div>
 
+    <!-- ══ FLUJO DE CAJA ════════════════════════════════════ -->
+    <div id="page-flujo" class="page">
+      <div class="ph">
+        <div class="pt">Flujo de Caja</div>
+        <div style="display:flex;gap:8px">
+          <button class="bp" onclick="g('m-gasto').style.display='flex'" style="background:var(--orange)">
+            <i class="bi bi-dash-circle"></i>Registrar Gasto
+          </button>
+          <button class="bg" onclick="exportarTransacciones()"><i class="bi bi-file-earmark-excel"></i>Exportar</button>
+        </div>
+      </div>
+      <!-- KPIs -->
+      <div class="kg" style="margin-bottom:18px">
+        <div class="kc" style="border-top:3px solid var(--green)">
+          <div class="kl">Ingresos del Mes</div><div class="kv" id="trx-ing-mes">—</div>
+          <div class="ks" id="trx-ing-n">cobros registrados</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--orange)">
+          <div class="kl">Egresos del Mes</div><div class="kv" id="trx-egr-mes">—</div>
+          <div class="ks" id="trx-egr-n">gastos y devoluciones</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--purple)">
+          <div class="kl">Balance del Mes</div><div class="kv" id="trx-balance">—</div>
+          <div class="ks">neto del período</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--rose)">
+          <div class="kl">Egresos por Gasto Op.</div><div class="kv" id="trx-gastos">—</div>
+          <div class="ks">sin devoluciones</div>
+        </div>
+      </div>
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="frow" style="gap:10px;flex-wrap:wrap">
+          <select class="fc" id="trx-tipo" onchange="renderFlujo()" style="width:160px">
+            <option value="">Todos</option>
+            <option value="Ingreso">Ingresos</option>
+            <option value="Egreso">Egresos</option>
+          </select>
+          <select class="fc" id="trx-cat" onchange="renderFlujo()" style="width:180px">
+            <option value="">Todas las categorías</option>
+            <option value="Cobro_Venta">Cobro de venta</option>
+            <option value="Devolucion_Cliente">Devolución cliente</option>
+            <option value="Gasto_Envio">Gasto envío</option>
+            <option value="Compra_Proveedor">Compra proveedor</option>
+            <option value="Gasto_Operativo">Gasto operativo</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <input type="date" class="fc" id="trx-fi" onchange="renderFlujo()" style="width:155px">
+          <input type="date" class="fc" id="trx-ff" onchange="renderFlujo()" style="width:155px">
+        </div>
+      </div>
+      <!-- Tabla -->
+      <div class="card">
+        <div class="tw">
+          <table class="t">
+            <thead><tr>
+              <th>ID</th><th>Fecha</th><th>Tipo</th><th>Categoría</th>
+              <th>Monto</th><th>Venta Ref.</th><th>Método</th><th>Descripción</th><th>Vendedor</th>
+            </tr></thead>
+            <tbody id="tb-flujo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
   <!-- MOBILE BOTTOM NAV -->
   <nav id="mob-nav">
@@ -831,6 +897,47 @@ table.t tbody tr:last-child{border-bottom:none}
       <button class="bg" onclick="closeM('m-cobro')">Cancelar</button>
       <button class="bp" style="background:var(--green)" onclick="confirmarCobro()">
         <i class="bi bi-check-lg"></i>Registrar Cobro
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR GASTO -->
+<div id="m-gasto" class="mo" onclick="bgcl(event,'m-gasto')" style="display:none">
+  <div class="mb msm">
+    <div class="mhd">
+      <div class="mti" style="color:var(--orange)"><i class="bi bi-dash-circle"></i> Registrar Gasto</div>
+      <button class="bx" onclick="closeM('m-gasto')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div class="fr c2">
+        <div class="fg"><label class="fl">Categoría</label>
+          <select class="fc" id="gasto-cat">
+            <option value="Gasto_Envio">Gasto de envío / moto</option>
+            <option value="Compra_Proveedor">Compra a proveedor</option>
+            <option value="Gasto_Operativo">Gasto operativo</option>
+            <option value="Otro">Otro</option>
+          </select></div>
+        <div class="fg"><label class="fl">Monto (Q)</label>
+          <input class="fc" type="number" id="gasto-monto" min="0" step="0.01" placeholder="0.00"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fg"><label class="fl">Método de pago</label>
+          <select class="fc" id="gasto-metodo">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta">Tarjeta</option>
+          </select></div>
+        <div class="fg"><label class="fl">Venta relacionada (opcional)</label>
+          <input class="fc" id="gasto-venta" placeholder="VTA-... (si aplica)"></div>
+      </div>
+      <div class="fg"><label class="fl">Descripción</label>
+        <input class="fc" id="gasto-desc" placeholder="Ej: Envío por moto zona 10, pago facturas..."></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-gasto')">Cancelar</button>
+      <button class="bp" style="background:var(--orange)" onclick="confirmarGasto()">
+        <i class="bi bi-check-lg"></i>Registrar Gasto
       </button>
     </div>
   </div>
@@ -1094,21 +1201,21 @@ const CFG={
 };
 
 // Nombres de tablas en Excel — deben coincidir exactamente
-const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas",CFG:"Configuracion",CBR:"Cobros"};
+const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas",CFG:"Configuracion",CBR:"Cobros",TRX:"Transacciones"};
 const CCB=["ID","VentaID","Fecha","Monto","Metodo","Vendedor","Notas"];
+const CTRX=["TransaccionID","Fecha","Tipo","Categoria","Monto","VentaID","Metodo","Descripcion","Vendedor"];
 
 // Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
 const CM=["ID","SKU","Producto","Categoria","Tipo","Cantidad","Fecha","Vendedor","ClienteNombre","PrecioUnit","Total","RefVenta"];
 const CC=["NIT","Nombre","Telefono","Direccion","TotalVentas","MontoTotal","UltimoContacto"];
 const CCFG=["Clave","Valor","Usuario","FechaModificacion"];
-const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
+const CV=["VentaID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","ClienteDir","TipoEnvio","MetodoPago","Subtotal","CostoEnvio","Total","Notas","EstadoEnvio"];
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
 // Guarda los encabezados reales leídos del Excel
-let realHeaders={P:[],M:[],C:[],V:[],D:[],CFG:[],CBR:[]};
-let configs=[]; // filas de la tabla Configuracion
-let cobros=[]; // filas de la tabla Cobros
+let realHeaders={P:[],M:[],C:[],V:[],D:[],CFG:[],CBR:[],TRX:[]};
+let configs=[],cobros=[],trxs=[];
 
 // ╔═══════════════════════════════════════════════╗
 // ║  ESTADO GLOBAL                               ║
@@ -1317,7 +1424,7 @@ function bootApp(){
   g("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
 
   const admin=isAdmin();
-  ["nav-historial","nav-movimientos","nav-reportes","nav-cobros",
+  ["nav-historial","nav-movimientos","nav-reportes","nav-cobros","nav-flujo",
    "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
     const e=g(id);if(e)e.style.display=admin?"":"none";
   });
@@ -1844,13 +1951,14 @@ async function refreshData(){
     }
 
     showLo("Cargando ventas y movimientos...");
-    const [mr,cr,vr,dr,cfgr,cbrr]=await Promise.all([
+    const [mr,cr,vr,dr,cfgr,cbrr,trxr]=await Promise.all([
       getRows(TBL.M).catch(()=>[]),
       getRows(TBL.C).catch(()=>[]),
       getRows(TBL.V).catch(()=>[]),
       getRows(TBL.D).catch(()=>[]),
       getRows(TBL.CFG).catch(()=>[]),
-      getRows(TBL.CBR).catch(()=>[])
+      getRows(TBL.CBR).catch(()=>[]),
+      getRows(TBL.TRX).catch(()=>[])
     ]);
     prods=toObjs(pr,realHeaders.P);
     movs=toObjs(mr,realHeaders.M);
@@ -1859,6 +1967,7 @@ async function refreshData(){
     dtls=toObjs(dr,realHeaders.D);
     configs=toObjs(cfgr,CCFG);
     cobros=toObjs(cbrr,CCB);
+    trxs=toObjs(trxr,CTRX);
     // Aplicar configuración del usuario actual
     aplicarConfigUsuario();
     fillUI();
@@ -2240,7 +2349,7 @@ function printRcp(){
   </style>
   </head><body>
   <div class="hd">
-    <div class="store">getNombreTienda()</div>
+    <div class="store">${getNombreTienda()}</div>
     <div class="sub">RECIBO DE VENTA</div>
   </div>
   <div class="info">
@@ -2409,7 +2518,7 @@ function renderHist(){
   if(!ls.length){tb.innerHTML=`<tr><td colspan="9"><div class="empty"><i class="bi bi-receipt"></i>Sin ventas</div></td></tr>`;return}
   const admin=isAdmin();
   tb.innerHTML=[...ls].reverse().map(v=>`<tr>
-    <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.ID||"—"}</td>
+    <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.VentaID||"—"}</td>
     <td style="white-space:nowrap;font-size:12px">${fd(v.Fecha)}</td>
     <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${v.ClienteNombre||"—"}</td>
     <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
@@ -2418,9 +2527,9 @@ function renderHist(){
     <td style="font-weight:700">${Q(v.Total)}</td>
     <td>${trackBadge(v.EstadoEnvio)}</td>
     <td style="white-space:nowrap">
-      <button onclick="verVenta('${v.ID}')" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:3px 6px;border-radius:6px;font-weight:600" title="Ver detalle"><i class="bi bi-eye"></i></button>
+      <button onclick="verVenta('${v.VentaID}')" style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:3px 6px;border-radius:6px;font-weight:600" title="Ver detalle"><i class="bi bi-eye"></i></button>
       ${admin&&v.EstadoEnvio!=="Entregado"?`
-        <select onchange="cambiarEstado('${v.ID}',this.value,this)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--ink)" title="Cambiar estado">
+        <select onchange="cambiarEstado('${v.VentaID}',this.value,this)" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);color:var(--ink)" title="Cambiar estado">
           <option value="">Cambiar...</option>
           <option value="Recibido en bodega" ${v.EstadoEnvio==="Recibido en bodega"?"selected":""}>Recibido en bodega</option>
           <option value="En Ruta" ${v.EstadoEnvio==="En Ruta"?"selected":""}>En Ruta</option>
@@ -2433,7 +2542,7 @@ function renderHist(){
 
 async function cambiarEstado(ventaId, nuevoEstado, selectEl){
   if(!nuevoEstado)return;
-  const v=vtas.find(x=>x.ID===ventaId);
+  const v=vtas.find(x=>x.VentaID===ventaId);
   if(!v)return;
 
   // Confirmación para "No Recibió" porque devuelve stock
@@ -2464,15 +2573,25 @@ async function cambiarEstado(ventaId, nuevoEstado, selectEl){
     if(nuevoEstado==="No Recibió"){
       const ds=dtls.filter(d=>d.VentaID===ventaId);
       const fh=localDate();
+      let totalDevuelto=0;
       for(const d of ds){
-        // Buscar el producto en prods por SKU
         const p=prods.find(x=>x.SKU===d.SKU&&String(x.Talla)===String(d.Talla));
         if(p){
           const nuevoStock=(+p.StockActual||0)+(+d.Cantidad||0);
           await updStock(p,nuevoStock);
           await addRow(TBL.M,[Date.now()+"",d.SKU,d.Producto,"","Entrada",d.Cantidad,fh,
             me.name||"Admin","",0,0,"Devolución VTA: "+ventaId]);
+          totalDevuelto+=(+d.Subtotal||0);
         }
+      }
+      // Registrar Transaccion de egreso por devolución
+      if(totalDevuelto>0){
+        const trxId="TRX-"+Date.now();
+        await addRow(TBL.TRX,[trxId,fh,"Egreso","Devolucion_Cliente",totalDevuelto,ventaId,
+          "","Devolución no recibida VTA: "+ventaId,me.name||"Admin"]);
+        trxs.push({TransaccionID:trxId,Fecha:fh,Tipo:"Egreso",Categoria:"Devolucion_Cliente",
+          Monto:totalDevuelto,VentaID:ventaId,Metodo:"",_i:trxs.length,
+          _raw:[trxId,fh,"Egreso","Devolucion_Cliente",totalDevuelto,ventaId,"","",""]});
       }
       toast("🔄 Stock devuelto al inventario","#7c6cd1");
     }else{
@@ -2619,7 +2738,7 @@ function getCobradoVenta(ventaId){
 // Estado de cobro: pendiente | parcial | cobrado
 function getEstadoCobro(v){
   const total=+v.Total||0;
-  const cobrado=getCobradoVenta(v.ID);
+  const cobrado=getCobradoVenta(v.VentaID);
   if(cobrado<=0)return"pendiente";
   if(cobrado<total-0.01)return"parcial";
   return"cobrado";
@@ -2638,14 +2757,14 @@ function badgeCobro(estado,cobrado,total){
 let _cobroActual=null;
 
 function abrirCobro(ventaId){
-  const v=vtas.find(x=>x.ID===ventaId);
+  const v=vtas.find(x=>x.VentaID===ventaId);
   if(!v)return;
   _cobroActual=v;
   const total=+v.Total||0;
   const cobrado=getCobradoVenta(ventaId);
   const pendiente=Math.max(0,total-cobrado);
   g("cobro-info").innerHTML=`
-    <div style="font-weight:600;font-size:14px;margin-bottom:6px">${v.ClienteNombre||"—"} — ${v.ID}</div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px">${v.ClienteNombre||"—"} — ${v.VentaID}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">
       <div><span style="color:var(--mink)">Total venta</span><br><b>${Q(total)}</b></div>
       <div><span style="color:var(--mink)">Ya cobrado</span><br><b style="color:var(--green)">${Q(cobrado)}</b></div>
@@ -2661,7 +2780,7 @@ function abrirCobro(ventaId){
 function calcSaldoCobro(){
   if(!_cobroActual)return;
   const total=+_cobroActual.Total||0;
-  const cobrado=getCobradoVenta(_cobroActual.ID);
+  const cobrado=getCobradoVenta(_cobroActual.VentaID||_cobroActual.ID||"");
   const monto=parseFloat(g("cobro-monto").value)||0;
   const nuevoPendiente=Math.max(0,total-cobrado-monto);
   const box=g("cobro-saldo");
@@ -2680,7 +2799,7 @@ async function confirmarCobro(){
   const monto=parseFloat(g("cobro-monto").value)||0;
   if(monto<=0){alert("Ingresa un monto válido.");return}
   const total=+_cobroActual.Total||0;
-  const cobrado=getCobradoVenta(_cobroActual.ID);
+  const cobrado=getCobradoVenta(_cobroActual.VentaID||_cobroActual.ID||"");
   if(monto>total-cobrado+0.01){
     if(!confirm(`El monto (${Q(monto)}) supera el pendiente (${Q(total-cobrado)}). ¿Continuar?`))return;
   }
@@ -2690,10 +2809,20 @@ async function confirmarCobro(){
     const fh=localDate();
     const metodo=g("cobro-metodo").value;
     const notas=g("cobro-notas").value.trim();
-    await addRow(TBL.CBR,[id,_cobroActual.ID,fh,monto,metodo,me.name||"Admin",notas]);
-    // Actualizar cache local inmediatamente
-    cobros.push({ID:id,VentaID:_cobroActual.ID,Fecha:fh,Monto:monto,Metodo:metodo,
-      Vendedor:me.name||"Admin",Notas:notas,_i:cobros.length,_raw:[id,_cobroActual.ID,fh,monto,metodo,me.name||"Admin",notas]});
+    const ventaId=_cobroActual.VentaID||_cobroActual.ID||"";
+    const clienteNom=_cobroActual.ClienteNombre||"";
+    await addRow(TBL.CBR,[id,ventaId,fh,monto,metodo,me.name||"Admin",notas]);
+    // Registrar Transaccion automáticamente
+    const trxId="TRX-"+Date.now();
+    await addRow(TBL.TRX,[trxId,fh,"Ingreso","Cobro_Venta",monto,ventaId,metodo,
+      `Cobro ${ventaId} — ${clienteNom}`,me.name||"Admin"]);
+    // Actualizar cache local
+    cobros.push({ID:id,VentaID:ventaId,Fecha:fh,Monto:monto,Metodo:metodo,
+      Vendedor:me.name||"Admin",Notas:notas,_i:cobros.length,
+      _raw:[id,ventaId,fh,monto,metodo,me.name||"Admin",notas]});
+    trxs.push({TransaccionID:trxId,Fecha:fh,Tipo:"Ingreso",Categoria:"Cobro_Venta",Monto:monto,
+      VentaID:ventaId,Metodo:metodo,Descripcion:`Cobro ${ventaId}`,Vendedor:me.name||"Admin",
+      _i:trxs.length,_raw:[trxId,fh,"Ingreso","Cobro_Venta",monto,ventaId,metodo,"",me.name||"Admin"]});
     closeM("m-cobro");
     toast(`✅ Cobro registrado: ${Q(monto)}`,var_("--green"));
     renderCobros();
@@ -2728,7 +2857,7 @@ function renderCobros(){
     if(fi&&f<fi)return false;
     if(ff&&f>ff)return false;
     if(busq&&!(v.ClienteNombre||"").toLowerCase().includes(busq)&&
-       !(v.ID||"").toLowerCase().includes(busq))return false;
+       !(v.VentaID||"").toLowerCase().includes(busq))return false;
     return true;
   });
 
@@ -2738,11 +2867,11 @@ function renderCobros(){
     return;
   }
   tb.innerHTML=[...ls].reverse().map(v=>{
-    const cobrado=getCobradoVenta(v.ID);
+    const cobrado=getCobradoVenta(v.VentaID);
     const pendiente=Math.max(0,(+v.Total||0)-cobrado);
     const estado=getEstadoCobro(v);
     return`<tr>
-      <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.ID||"—"}</td>
+      <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.VentaID||"—"}</td>
       <td style="font-size:12px">${fd(v.Fecha)}</td>
       <td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.ClienteNombre||"—"}</td>
       <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
@@ -2750,7 +2879,7 @@ function renderCobros(){
       <td style="color:var(--green);font-weight:600">${cobrado>0?Q(cobrado):"—"}</td>
       <td style="color:var(--orange);font-weight:600">${pendiente>0.01?Q(pendiente):"—"}</td>
       <td>${badgeCobro(estado,cobrado,+v.Total||0)}</td>
-      <td>${estado!=="cobrado"?`<button onclick="abrirCobro('${v.ID}')"
+      <td>${estado!=="cobrado"?`<button onclick="abrirCobro('${v.VentaID}')"
         style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
         <i class="bi bi-plus"></i>Cobro</button>`:""}
       </td>
@@ -2758,11 +2887,111 @@ function renderCobros(){
   }).join("");
 }
 
+// ╔═══════════════════════════════════════════════╗
+// ║  FLUJO DE CAJA / TRANSACCIONES               ║
+// ╚═══════════════════════════════════════════════╝
+function renderFlujo(){
+  const tipo=g("trx-tipo").value;
+  const cat=g("trx-cat").value;
+  const fi=g("trx-fi").value,ff=g("trx-ff").value;
+  const hoy=localDate(),mes=hoy.slice(0,7);
+
+  const trxMes=trxs.filter(t=>String(t.Fecha||"").startsWith(mes));
+  const ingresos=trxMes.filter(t=>t.Tipo==="Ingreso").reduce((s,t)=>s+(+t.Monto||0),0);
+  const egresos=trxMes.filter(t=>t.Tipo==="Egreso").reduce((s,t)=>s+(+t.Monto||0),0);
+  const gastos=trxMes.filter(t=>t.Tipo==="Egreso"&&t.Categoria!=="Devolucion_Cliente").reduce((s,t)=>s+(+t.Monto||0),0);
+  const bal=ingresos-egresos;
+
+  g("trx-ing-mes").textContent=Q(ingresos);
+  g("trx-ing-n").textContent=trxMes.filter(t=>t.Tipo==="Ingreso").length+" transacciones";
+  g("trx-egr-mes").textContent=Q(egresos);
+  g("trx-egr-n").textContent=trxMes.filter(t=>t.Tipo==="Egreso").length+" transacciones";
+  g("trx-balance").textContent=Q(bal);
+  g("trx-balance").style.color=bal>=0?"var(--green)":"var(--rose)";
+  g("trx-gastos").textContent=Q(gastos);
+
+  let ls=[...trxs].reverse().filter(t=>{
+    if(tipo&&t.Tipo!==tipo)return false;
+    if(cat&&t.Categoria!==cat)return false;
+    const f=excelToDate(t.Fecha)||String(t.Fecha||"").slice(0,10);
+    if(fi&&f<fi)return false;
+    if(ff&&f>ff)return false;
+    return true;
+  });
+
+  const catLabels={
+    Cobro_Venta:"Cobro de venta",Devolucion_Cliente:"Devolución cliente",
+    Gasto_Envio:"Gasto envío",Compra_Proveedor:"Compra proveedor",
+    Gasto_Operativo:"Gasto operativo",Otro:"Otro"
+  };
+  const catColores={
+    Ingreso:{bg:"#d4edda",color:"#1a7a3a"},
+    Egreso:{bg:"#fce4e8",color:"#a02040"}
+  };
+
+  const tb=g("tb-flujo");
+  if(!ls.length){
+    tb.innerHTML=`<tr><td colspan="9"><div class="empty"><i class="bi bi-arrow-left-right"></i>Sin transacciones</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=ls.map(t=>{
+    const c=catColores[t.Tipo]||{bg:"#eee",color:"#555"};
+    return`<tr>
+      <td style="font-size:11px;color:var(--mink)">${String(t.TransaccionID||"").slice(-12)}</td>
+      <td style="font-size:12px">${fd(t.Fecha)}</td>
+      <td><span style="background:${c.bg};color:${c.color};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${t.Tipo}</span></td>
+      <td style="font-size:12px">${catLabels[t.Categoria]||t.Categoria||"—"}</td>
+      <td style="font-weight:700;color:${t.Tipo==="Ingreso"?"var(--green)":"var(--rose)"}">${t.Tipo==="Egreso"?"-":""}${Q(t.Monto)}</td>
+      <td style="font-size:11px;color:var(--mink)">${t.VentaID||"—"}</td>
+      <td style="font-size:12px">${t.Metodo||"—"}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.Descripcion||"—"}</td>
+      <td style="font-size:12px;color:var(--mink)">${t.Vendedor||"—"}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function confirmarGasto(){
+  const monto=parseFloat(g("gasto-monto").value)||0;
+  if(monto<=0){alert("Ingresa un monto válido.");return}
+  const cat=g("gasto-cat").value;
+  const metodo=g("gasto-metodo").value;
+  const desc=g("gasto-desc").value.trim();
+  const ventaRef=g("gasto-venta").value.trim();
+  showLo("Registrando gasto...");
+  try{
+    const trxId="TRX-"+Date.now();
+    const fh=localDate();
+    await addRow(TBL.TRX,[trxId,fh,"Egreso",cat,monto,ventaRef||"",metodo,desc||cat,me.name||"Admin"]);
+    trxs.push({TransaccionID:trxId,Fecha:fh,Tipo:"Egreso",Categoria:cat,Monto:monto,
+      VentaID:ventaRef||"",Metodo:metodo,Descripcion:desc||cat,Vendedor:me.name||"Admin",
+      _i:trxs.length,_raw:[trxId,fh,"Egreso",cat,monto,ventaRef||"",metodo,desc||cat,me.name||"Admin"]});
+    // Limpiar form
+    ["gasto-monto","gasto-desc","gasto-venta"].forEach(id=>{const e=g(id);if(e)e.value="";});
+    closeM("m-gasto");
+    toast(`✅ Gasto registrado: ${Q(monto)}`,"#e0923b");
+    if(g("page-flujo").classList.contains("active"))renderFlujo();
+  }catch(e){hideLo();alert("Error al registrar gasto:\n"+e.message);}
+}
+
+function exportarTransacciones(){
+  if(!trxs.length){alert("No hay transacciones registradas.");return}
+  const rows=[["TransaccionID","Fecha","Tipo","Categoria","Monto","VentaID","Metodo","Descripcion","Vendedor"]];
+  trxs.forEach(t=>rows.push([t.TransaccionID||"",t.Fecha||"",t.Tipo||"",t.Categoria||"",
+    t.Monto||0,t.VentaID||"",t.Metodo||"",t.Descripcion||"",t.Vendedor||""]));
+  const bom="\uFEFF";
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([bom+csv],{type:"text/csv;charset=utf-8;"}));
+  a.download=`Sorelle_FlujoCaja_${localDate()}.csv`;
+  a.click();
+  toast("✅ Flujo de caja exportado","#3db88a");
+}
+
 function exportarCobros(){
   if(!cobros.length){alert("No hay cobros registrados.");return}
   const rows=[["ID Cobro","ID Venta","Fecha","Monto","Metodo","Vendedor","Notas","Cliente","Total Venta"]];
   cobros.forEach(c=>{
-    const v=vtas.find(x=>x.ID===c.VentaID);
+    const v=vtas.find(x=>x.VentaID===c.VentaID);
     rows.push([c.ID||"",c.VentaID||"",c.Fecha||"",c.Monto||0,c.Metodo||"",
       c.Vendedor||"",c.Notas||"",v?.ClienteNombre||"",v?.Total||""]);
   });
@@ -2788,11 +3017,11 @@ function exportarVentas(){
   ];
   filtradas.forEach(v=>{
     const fVenta=excelToDate(v.Fecha)||"";
-    const dets=dtls.filter(d=>d.VentaID===v.ID);
+    const dets=dtls.filter(d=>d.VentaID===v.VentaID);
     if(dets.length){
       dets.forEach((d,i)=>{
         rows.push([
-          v.ID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
+          v.VentaID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
           v.ClienteTel||"",v.ClienteDir||"",v.TipoEnvio||"",v.MetodoPago||"",
           d.Producto||"",d.Talla||"",d.Cantidad||0,d.PrecioUnit||0,d.Subtotal||0,
           i===0?(v.CostoEnvio||0):"",i===0?(v.Total||0):"",
@@ -2801,7 +3030,7 @@ function exportarVentas(){
       });
     }else{
       rows.push([
-        v.ID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
+        v.VentaID,fVenta,v.Vendedor||"",v.ClienteNombre||"",v.ClienteNIT||"",
         v.ClienteTel||"",v.ClienteDir||"",v.TipoEnvio||"",v.MetodoPago||"",
         "","","","","",v.CostoEnvio||0,v.Total||0,v.EstadoEnvio||""
       ]);
@@ -2923,10 +3152,10 @@ function csvVal(v){
 }
 
 function verVenta(id){
-  const v=vtas.find(x=>x.ID===id);if(!v)return;
+  const v=vtas.find(x=>x.VentaID===id);if(!v)return;
   const ds=dtls.filter(d=>d.VentaID===id);
   const snap=ds.map(d=>({nom:d.Producto,tal:d.Talla,q:d.Cantidad,pv:d.PrecioUnit,sub:d.Subtotal}));
-  showRecibo({id:v.ID,fh:v.Fecha,vnd:v.Vendedor,nit:v.ClienteNIT,nom:v.ClienteNombre,
+  showRecibo({id:v.VentaID,fh:v.Fecha,vnd:v.Vendedor,nit:v.ClienteNIT,nom:v.ClienteNombre,
     tel:v.ClienteTel,dir:v.ClienteDir,envio:v.TipoEnvio,pago:v.MetodoPago,
     sub:v.Subtotal,env:v.CostoEnvio,tot:v.Total,notas:v.Notas,items:snap});
 }
@@ -3265,7 +3494,7 @@ function renderRep(){
   const corteISO=corteD.toISOString().split("T")[0];
   // Filtrar usando excelToDate para manejar seriales
   const fv=vtas.filter(v=>{const f=excelToDate(v.Fecha);return f&&f>=corteISO});
-  const fd2=dtls.filter(dt=>{const v=vtas.find(x=>x.ID===dt.VentaID);if(!v)return false;const f=excelToDate(v.Fecha);return f&&f>=corteISO});
+  const fd2=dtls.filter(dt=>{const v=vtas.find(x=>x.VentaID===dt.VentaID);if(!v)return false;const f=excelToDate(v.Fecha);return f&&f>=corteISO});
   const ing=fv.reduce((s,v)=>s+(+v.Total||0),0);
   const uds=fd2.reduce((s,dt)=>s+(+dt.Cantidad||0),0);
   g("r1").textContent=fv.length;g("r1s").textContent="últimos "+d+" días";
@@ -3433,7 +3662,7 @@ function goPage(btn){
   // Sincronizar bottom nav mobile
   document.querySelectorAll(".mob-ni[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
   document.querySelectorAll(".ni[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
-  if(name==="reportes")renderRep();
+  if(name==="reportes")renderRep();if(name==="cobros")renderCobros();if(name==="flujo")renderFlujo();
   closeSidebar();
 }
 
@@ -3443,7 +3672,7 @@ function goPageMob(btn){
   document.querySelectorAll(".ni,.mob-ni").forEach(b=>b.classList.remove("active"));
   g("page-"+name).classList.add("active");
   document.querySelectorAll("[data-page='"+name+"']").forEach(b=>b.classList.add("active"));
-  if(name==="reportes")renderRep();
+  if(name==="reportes")renderRep();if(name==="cobros")renderCobros();if(name==="flujo")renderFlujo();
 }
 
 function toggleSidebar(){
