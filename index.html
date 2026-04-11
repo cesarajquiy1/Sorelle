@@ -1379,29 +1379,6 @@ async function guardarNombreTienda(val){
   },1200);
 }
 
-async function guardarConfig(clave,valor){
-  const user=me?.username||"";
-  const fecha=localDate();
-  // Buscar fila existente para este usuario
-  const fila=configs.find(c=>
-    String(c.Clave||"")===clave&&
-    String(c.Usuario||"").toLowerCase()===user.toLowerCase()
-  );
-  if(fila){
-    const raw=[...fila._raw];
-    // pos 0=Clave, 1=Valor, 2=Usuario, 3=FechaModificacion
-    if(raw.length>1)raw[1]=valor;
-    if(raw.length>3)raw[3]=fecha;
-    await updRaw(TBL.CFG,fila._i,raw);
-  }else{
-    await addRow(TBL.CFG,[clave,valor,user,fecha]);
-  }
-  // Actualizar cache local sin recargar todo
-  const ci=configs.findIndex(c=>String(c.Clave||"")===clave&&String(c.Usuario||"").toLowerCase()===user.toLowerCase());
-  if(ci>=0)configs[ci].Valor=valor;
-  else configs.push({Clave:clave,Valor:valor,Usuario:user,FechaModificacion:fecha,_i:configs.length,_raw:[clave,valor,user,fecha]});
-}
-
 function signOut(){
   try{if(mApp)mApp.logoutPopup();}catch(e){}
   cleanMsal();mReady=false;mApp=null;me=null;tok=null;
@@ -2218,20 +2195,25 @@ const ci=esCF
     return mismoTel||mismoNombre;
   })
   :clis.findIndex(c=>String(c.NIT||"").toUpperCase()===nit.toUpperCase());
-      // Detectar si la tabla tiene la columna MontoTotal (6 cols) o no (5 cols)
-      const tieneMontoTotal=realHeaders.C&&(realHeaders.C.includes("MontoTotal")||realHeaders.C.length>=6);
+      // Detectar columnas reales de la tabla Clientes
+      const hdrsC=realHeaders.C&&realHeaders.C.length>=5?realHeaders.C:CC;
       if(ci<0){
-        // Nuevo cliente
-        const cVals=[nit||"CF", nom, tel||"", dir||"", 1];
-        if(tieneMontoTotal)cVals.push(+tot||0);
+        // Nuevo cliente — construir array según columnas reales
+        const cmap={NIT:nit||"CF",Nombre:nom,Telefono:tel||"",Direccion:dir||"",
+          TotalVentas:1,MontoTotal:+tot||0,UltimoContacto:""};
+        const cVals=hdrsC.map(h=>cmap.hasOwnProperty(h)?cmap[h]:"");
         await addRow(TBL.C,cVals);
       }else{
         const c=clis[ci];
         const raw=[...c._raw];
-        if(raw.length>2&&!raw[2])raw[2]=tel||"";
-        if(raw.length>3&&!raw[3])raw[3]=dir||"";
-        if(raw.length>4)raw[4]=(+raw[4]||0)+1;
-        if(tieneMontoTotal&&raw.length>5)raw[5]=(+raw[5]||0)+(+tot||0);
+        // Expandir si hay columnas nuevas
+        while(raw.length<hdrsC.length)raw.push("");
+        const ti=hdrsC.indexOf("Telefono"),di=hdrsC.indexOf("Direccion");
+        const vi=hdrsC.indexOf("TotalVentas"),mi=hdrsC.indexOf("MontoTotal");
+        if(ti>=0&&!raw[ti])raw[ti]=tel||"";
+        if(di>=0&&!raw[di])raw[di]=dir||"";
+        if(vi>=0)raw[vi]=(+raw[vi]||0)+1;
+        if(mi>=0)raw[mi]=(+raw[mi]||0)+(+tot||0);
         await updRaw(TBL.C,c._i,raw);
       }
     }catch(e){
@@ -2278,7 +2260,7 @@ function showRecibo(v){
   if(btnDev) btnDev.style.display=(isAdmin()&&v.items&&v.items.length)?"flex":"none";
   const html=`
     <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:14px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">getNombreTienda()</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700">${getNombreTienda()}</div>
       <div style="font-size:11px;color:#777;margin-top:6px">RECIBO DE VENTA</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:14px;font-size:12px">
@@ -2410,7 +2392,7 @@ function enviarWsp(){
   // Construir mensaje de texto plano
   const lineas=v.items.map(it=>`  • ${it.nom} T${it.tal} ×${it.q} = ${Q(it.sub)}`).join("\n");
   const msg=[
-    `*getNombreTienda()*`,
+    `*${getNombreTienda()}*`,
     `*Recibo de Venta* — ${v.id}`,
     `Fecha: ${fd(v.fh)}`,
     `Cliente: ${v.nom}`,
