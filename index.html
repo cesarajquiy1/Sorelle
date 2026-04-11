@@ -335,6 +335,7 @@ table.t tbody tr:last-child{border-bottom:none}
       <button class="ni" data-page="productos" onclick="goPage(this)"><i class="bi bi-box-seam"></i>Productos</button>
       <button class="ni" id="nav-movimientos" data-page="movimientos" onclick="goPage(this)"><i class="bi bi-arrow-left-right"></i>Movimientos</button>
       <div class="sb-sec" id="nav-sec-analisis">Análisis</div>
+      <button class="ni" id="nav-cobros" data-page="cobros" onclick="goPage(this)"><i class="bi bi-cash-coin"></i>Cobros</button>
       <button class="ni" id="nav-reportes" data-page="reportes" onclick="goPage(this)"><i class="bi bi-bar-chart-line"></i>Reportes</button>
     </div>
     <div class="sb-bot">
@@ -593,6 +594,65 @@ table.t tbody tr:last-child{border-bottom:none}
       </div>
     </div>
 
+    <!-- ══ COBROS ══════════════════════════════════════════ -->
+    <div id="page-cobros" class="page">
+      <div class="ph">
+        <div class="pt">Control de Cobros</div>
+        <div style="display:flex;gap:8px">
+          <button class="bg" onclick="exportarCobros()"><i class="bi bi-file-earmark-excel"></i>Exportar</button>
+        </div>
+      </div>
+      <!-- KPIs -->
+      <div class="kg" style="margin-bottom:18px">
+        <div class="kc" style="border-top:3px solid var(--orange)">
+          <div class="kl">Pendiente de Cobro</div>
+          <div class="kv" id="cob-pendiente">—</div>
+          <div class="ks" id="cob-pendiente-n">ventas sin cobrar</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--green)">
+          <div class="kl">Cobrado Hoy</div>
+          <div class="kv" id="cob-hoy">—</div>
+          <div class="ks">ingresos del día</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--purple)">
+          <div class="kl">Cobrado Este Mes</div>
+          <div class="kv" id="cob-mes">—</div>
+          <div class="ks">ingresos del mes</div>
+        </div>
+        <div class="kc" style="border-top:3px solid var(--rose)">
+          <div class="kl">Cobros Parciales</div>
+          <div class="kv" id="cob-parcial">—</div>
+          <div class="ks">con saldo pendiente</div>
+        </div>
+      </div>
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="frow" style="gap:10px;flex-wrap:wrap">
+          <select class="fc" id="cob-filtro" onchange="renderCobros()" style="width:180px">
+            <option value="pendiente">Pendientes de cobro</option>
+            <option value="parcial">Cobros parciales</option>
+            <option value="cobrado">Ya cobrados</option>
+            <option value="todos">Todos</option>
+          </select>
+          <input type="date" class="fc" id="cob-fi" onchange="renderCobros()" style="width:160px">
+          <input type="date" class="fc" id="cob-ff" onchange="renderCobros()" style="width:160px">
+          <input class="fc" id="cob-busq" placeholder="Buscar cliente..." oninput="renderCobros()" style="flex:1;min-width:140px">
+        </div>
+      </div>
+      <!-- Tabla -->
+      <div class="card">
+        <div class="tw">
+          <table class="t">
+            <thead><tr>
+              <th>Venta</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th>
+              <th>Total</th><th>Cobrado</th><th>Pendiente</th><th>Estado</th><th></th>
+            </tr></thead>
+            <tbody id="tb-cobros"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
   <!-- MOBILE BOTTOM NAV -->
   <nav id="mob-nav">
@@ -741,6 +801,38 @@ table.t tbody tr:last-child{border-bottom:none}
     <button onclick="closeM('m-zoom')" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     <img id="zoom-img" src="" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.5)">
     <div id="zoom-label" style="color:rgba(255,255,255,.8);font-size:14px;font-weight:500"></div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR COBRO -->
+<div id="m-cobro" class="mo" onclick="bgcl(event,'m-cobro')" style="display:none">
+  <div class="mb msm">
+    <div class="mhd">
+      <div class="mti" style="color:var(--green)"><i class="bi bi-cash-coin"></i> Registrar Cobro</div>
+      <button class="bx" onclick="closeM('m-cobro')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mbd">
+      <div id="cobro-info" style="background:var(--bone);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px"></div>
+      <div class="fr c2">
+        <div class="fg"><label class="fl">Monto a cobrar (Q)</label>
+          <input class="fc" type="number" id="cobro-monto" min="0" step="0.01" placeholder="0.00" oninput="calcSaldoCobro()"></div>
+        <div class="fg"><label class="fl">Método de pago</label>
+          <select class="fc" id="cobro-metodo">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta">Tarjeta</option>
+          </select></div>
+      </div>
+      <div class="fg"><label class="fl">Notas del cobro</label>
+        <input class="fc" id="cobro-notas" placeholder="Referencia de transferencia, observaciones..."></div>
+      <div id="cobro-saldo" style="background:#d4edda;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:4px;display:none"></div>
+    </div>
+    <div class="mft">
+      <button class="bg" onclick="closeM('m-cobro')">Cancelar</button>
+      <button class="bp" style="background:var(--green)" onclick="confirmarCobro()">
+        <i class="bi bi-check-lg"></i>Registrar Cobro
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1002,7 +1094,8 @@ const CFG={
 };
 
 // Nombres de tablas en Excel — deben coincidir exactamente
-const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas",CFG:"Configuracion"};
+const TBL={P:"Productos",M:"Movimientos",C:"Clientes",V:"Ventas",D:"DetalleVentas",CFG:"Configuracion",CBR:"Cobros"};
+const CCB=["ID","VentaID","Fecha","Monto","Metodo","Vendedor","Notas"];
 
 // Columnas esperadas — el código usará las que existan en el Excel real
 const CP=["SKU","Nombre","Categoria","Talla","Color","Medidas","Proveedor","Ubicacion","Costo","PrecioVenta","StockActual","StockMinimo","ImagenURL","Activo"];
@@ -1013,8 +1106,9 @@ const CV=["ID","Fecha","Vendedor","ClienteNIT","ClienteNombre","ClienteTel","Cli
 const CD=["VentaID","SKU","Producto","Talla","Cantidad","PrecioUnit","Subtotal"];
 
 // Guarda los encabezados reales leídos del Excel
-let realHeaders={P:[],M:[],C:[],V:[],D:[],CFG:[]};
+let realHeaders={P:[],M:[],C:[],V:[],D:[],CFG:[],CBR:[]};
 let configs=[]; // filas de la tabla Configuracion
+let cobros=[]; // filas de la tabla Cobros
 
 // ╔═══════════════════════════════════════════════╗
 // ║  ESTADO GLOBAL                               ║
@@ -1129,31 +1223,26 @@ function aplicarConfigUsuario(){
 
 async function guardarConfig(clave,valor){
   const user=me?.username||"";
+  const fecha=localDate();
   const fila=configs.find(c=>
     String(c.Clave||"")===clave&&
     String(c.Usuario||"").toLowerCase()===user.toLowerCase()
   );
-  const fecha=localDate();
-  try{
-    if(fila){
-      // Actualizar fila existente
-      const raw=[...fila._raw];
-      const hdrs=CCFG;
-      const vi=hdrs.indexOf("Valor"),fi=hdrs.indexOf("FechaModificacion");
-      if(vi>=0&&vi<raw.length)raw[vi]=valor;
-      if(fi>=0&&fi<raw.length)raw[fi]=fecha;
-      await updRaw(TBL.CFG,fila._i,raw);
-    }else{
-      // Nueva fila
-      await addRow(TBL.CFG,[clave,valor,user,fecha]);
-    }
+  if(fila){
+    const raw=[...fila._raw];
+    // Posiciones fijas: 0=Clave, 1=Valor, 2=Usuario, 3=FechaModificacion
+    if(raw.length>1)raw[1]=valor;
+    if(raw.length>3)raw[3]=fecha;
+    await updRaw(TBL.CFG,fila._i,raw);
     // Actualizar cache local
-    await refreshData();
-  }catch(e){
-    console.warn("Error guardando config:",e.message);
-    // Fallback a localStorage si Excel falla
-    localStorage.setItem(`sorelle_cfg_${clave}_${user}`,valor);
+    fila.Valor=valor;fila.FechaModificacion=fecha;fila._raw=raw;
+  }else{
+    await addRow(TBL.CFG,[clave,valor,user,fecha]);
+    // Agregar al cache local
+    configs.push({Clave:clave,Valor:valor,Usuario:user,FechaModificacion:fecha,
+      _i:configs.length,_raw:[clave,valor,user,fecha]});
   }
+  // NO llamar refreshData aquí — causa race condition y limpia el campo
 }
 
 function getNombreTienda(){
@@ -1165,20 +1254,22 @@ function getNombreTienda(){
 
 async function guardarNombreTienda(val){
   const tienda=val.trim();
-  // Guardar en localStorage inmediatamente (respaldo instantáneo)
   if(tienda)localStorage.setItem(`sorelle_tienda_${me?.username||""}`,tienda);
-  // Luego intentar guardar en Excel con debounce
   clearTimeout(guardarNombreTienda._t);
   guardarNombreTienda._t=setTimeout(async()=>{
     if(!tienda)return;
     try{
       await guardarConfig("NombreTienda",tienda);
-      toast("✅ Nombre de tienda guardado","#3db88a");
+      toast("✅ Nombre de tienda guardado en Excel","#3db88a");
     }catch(e){
-      console.warn("Config no guardada en Excel:",e.message);
-      toast("⚠️ Guardado solo localmente — verifica la hoja Configuracion","#e0923b");
+      const msg=e.message||"";
+      if(msg.includes("404")||msg.includes("ItemNotFound")||msg.includes("Configuracion")){
+        toast("⚠️ Crea la hoja 'Configuracion' en Excel con tabla del mismo nombre","#e0923b");
+      }else{
+        toast("⚠️ Guardado localmente. Error: "+msg.slice(0,60),"#e0923b");
+      }
     }
-  },1500);
+  },1200);
 }
 
 async function guardarConfig(clave,valor){
@@ -1226,7 +1317,7 @@ function bootApp(){
   g("dash-fecha").textContent=new Date().toLocaleDateString("es-GT",{day:"numeric",month:"long",year:"numeric"});
 
   const admin=isAdmin();
-  ["nav-historial","nav-movimientos","nav-reportes",
+  ["nav-historial","nav-movimientos","nav-reportes","nav-cobros",
    "nav-sec-analisis","nav-sec-ventas-extra"].forEach(id=>{
     const e=g(id);if(e)e.style.display=admin?"":"none";
   });
@@ -1753,12 +1844,13 @@ async function refreshData(){
     }
 
     showLo("Cargando ventas y movimientos...");
-    const [mr,cr,vr,dr,cfgr]=await Promise.all([
+    const [mr,cr,vr,dr,cfgr,cbrr]=await Promise.all([
       getRows(TBL.M).catch(()=>[]),
       getRows(TBL.C).catch(()=>[]),
       getRows(TBL.V).catch(()=>[]),
       getRows(TBL.D).catch(()=>[]),
-      getRows(TBL.CFG).catch(()=>[]) // Configuracion — silencioso si no existe aún
+      getRows(TBL.CFG).catch(()=>[]),
+      getRows(TBL.CBR).catch(()=>[])
     ]);
     prods=toObjs(pr,realHeaders.P);
     movs=toObjs(mr,realHeaders.M);
@@ -1766,6 +1858,7 @@ async function refreshData(){
     vtas=toObjs(vr,realHeaders.V);
     dtls=toObjs(dr,realHeaders.D);
     configs=toObjs(cfgr,CCFG);
+    cobros=toObjs(cbrr,CCB);
     // Aplicar configuración del usuario actual
     aplicarConfigUsuario();
     fillUI();
@@ -2513,6 +2606,175 @@ function exportarStockBajo(){
   a.click();
   toast(`📦 Pedido exportado — ${bajo.length} productos con stock bajo`,"#3db88a");
 }
+// ╔═══════════════════════════════════════════════╗
+// ║  COBROS                                      ║
+// ╚═══════════════════════════════════════════════╝
+
+// Calcula el total cobrado para una venta
+function getCobradoVenta(ventaId){
+  return cobros.filter(c=>String(c.VentaID||"")===String(ventaId))
+    .reduce((s,c)=>s+(+c.Monto||0),0);
+}
+
+// Estado de cobro: pendiente | parcial | cobrado
+function getEstadoCobro(v){
+  const total=+v.Total||0;
+  const cobrado=getCobradoVenta(v.ID);
+  if(cobrado<=0)return"pendiente";
+  if(cobrado<total-0.01)return"parcial";
+  return"cobrado";
+}
+
+function badgeCobro(estado,cobrado,total){
+  const pendiente=Math.max(0,total-cobrado);
+  const cfg={
+    pendiente:{bg:"#fff3cd",color:"#856404",txt:"Pendiente"},
+    parcial:  {bg:"#d0e8ff",color:"#1a4a8a",txt:"Parcial"},
+    cobrado:  {bg:"#d4edda",color:"#1a7a3a",txt:"Cobrado"}
+  }[estado];
+  return`<span style="background:${cfg.bg};color:${cfg.color};padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600">${cfg.txt}</span>`;
+}
+
+let _cobroActual=null;
+
+function abrirCobro(ventaId){
+  const v=vtas.find(x=>x.ID===ventaId);
+  if(!v)return;
+  _cobroActual=v;
+  const total=+v.Total||0;
+  const cobrado=getCobradoVenta(ventaId);
+  const pendiente=Math.max(0,total-cobrado);
+  g("cobro-info").innerHTML=`
+    <div style="font-weight:600;font-size:14px;margin-bottom:6px">${v.ClienteNombre||"—"} — ${v.ID}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">
+      <div><span style="color:var(--mink)">Total venta</span><br><b>${Q(total)}</b></div>
+      <div><span style="color:var(--mink)">Ya cobrado</span><br><b style="color:var(--green)">${Q(cobrado)}</b></div>
+      <div><span style="color:var(--mink)">Pendiente</span><br><b style="color:var(--orange)">${Q(pendiente)}</b></div>
+    </div>`;
+  g("cobro-monto").value=pendiente.toFixed(2);
+  g("cobro-notas").value="";
+  g("cobro-saldo").style.display="none";
+  calcSaldoCobro();
+  g("m-cobro").style.display="flex";
+}
+
+function calcSaldoCobro(){
+  if(!_cobroActual)return;
+  const total=+_cobroActual.Total||0;
+  const cobrado=getCobradoVenta(_cobroActual.ID);
+  const monto=parseFloat(g("cobro-monto").value)||0;
+  const nuevoPendiente=Math.max(0,total-cobrado-monto);
+  const box=g("cobro-saldo");
+  box.style.display="block";
+  if(nuevoPendiente<0.01){
+    box.style.background="#d4edda";box.style.color="#1a7a3a";
+    box.textContent=`✅ Quedará completamente cobrado`;
+  }else{
+    box.style.background="#fff3cd";box.style.color="#856404";
+    box.textContent=`Saldo pendiente después del cobro: ${Q(nuevoPendiente)}`;
+  }
+}
+
+async function confirmarCobro(){
+  if(!_cobroActual)return;
+  const monto=parseFloat(g("cobro-monto").value)||0;
+  if(monto<=0){alert("Ingresa un monto válido.");return}
+  const total=+_cobroActual.Total||0;
+  const cobrado=getCobradoVenta(_cobroActual.ID);
+  if(monto>total-cobrado+0.01){
+    if(!confirm(`El monto (${Q(monto)}) supera el pendiente (${Q(total-cobrado)}). ¿Continuar?`))return;
+  }
+  showLo("Registrando cobro...");
+  try{
+    const id="CBR-"+Date.now();
+    const fh=localDate();
+    const metodo=g("cobro-metodo").value;
+    const notas=g("cobro-notas").value.trim();
+    await addRow(TBL.CBR,[id,_cobroActual.ID,fh,monto,metodo,me.name||"Admin",notas]);
+    // Actualizar cache local inmediatamente
+    cobros.push({ID:id,VentaID:_cobroActual.ID,Fecha:fh,Monto:monto,Metodo:metodo,
+      Vendedor:me.name||"Admin",Notas:notas,_i:cobros.length,_raw:[id,_cobroActual.ID,fh,monto,metodo,me.name||"Admin",notas]});
+    closeM("m-cobro");
+    toast(`✅ Cobro registrado: ${Q(monto)}`,var_("--green"));
+    renderCobros();
+    renderDash();
+  }catch(e){hideLo();alert("Error al registrar cobro:\n"+e.message);}
+}
+
+function renderCobros(){
+  const filtro=g("cob-filtro").value;
+  const fi=g("cob-fi").value,ff=g("cob-ff").value;
+  const busq=(g("cob-busq").value||"").toLowerCase();
+  const hoy=localDate(),mes=hoy.slice(0,7);
+
+  // Calcular KPIs
+  const entregadas=vtas.filter(v=>v.EstadoEnvio==="Entregado");
+  const pendientes=entregadas.filter(v=>getEstadoCobro(v)==="pendiente");
+  const parciales=entregadas.filter(v=>getEstadoCobro(v)==="parcial");
+  const montosPendientes=pendientes.reduce((s,v)=>s+(+v.Total||0),0);
+  const cobrosHoy=cobros.filter(c=>String(c.Fecha||"").startsWith(hoy));
+  const cobrosMes=cobros.filter(c=>String(c.Fecha||"").startsWith(mes));
+  g("cob-pendiente").textContent=Q(montosPendientes);
+  g("cob-pendiente-n").textContent=`${pendientes.length} venta${pendientes.length!==1?"s":""} sin cobrar`;
+  g("cob-hoy").textContent=Q(cobrosHoy.reduce((s,c)=>s+(+c.Monto||0),0));
+  g("cob-mes").textContent=Q(cobrosMes.reduce((s,c)=>s+(+c.Monto||0),0));
+  g("cob-parcial").textContent=parciales.length;
+
+  // Filtrar ventas entregadas según estado de cobro
+  let ls=entregadas.filter(v=>{
+    const estado=getEstadoCobro(v);
+    if(filtro!=="todos"&&estado!==filtro)return false;
+    const f=excelToDate(v.Fecha)||"";
+    if(fi&&f<fi)return false;
+    if(ff&&f>ff)return false;
+    if(busq&&!(v.ClienteNombre||"").toLowerCase().includes(busq)&&
+       !(v.ID||"").toLowerCase().includes(busq))return false;
+    return true;
+  });
+
+  const tb=g("tb-cobros");
+  if(!ls.length){
+    tb.innerHTML=`<tr><td colspan="9"><div class="empty"><i class="bi bi-cash-coin"></i>Sin resultados</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=[...ls].reverse().map(v=>{
+    const cobrado=getCobradoVenta(v.ID);
+    const pendiente=Math.max(0,(+v.Total||0)-cobrado);
+    const estado=getEstadoCobro(v);
+    return`<tr>
+      <td style="font-size:11px;font-weight:600;color:var(--rose)">${v.ID||"—"}</td>
+      <td style="font-size:12px">${fd(v.Fecha)}</td>
+      <td style="font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.ClienteNombre||"—"}</td>
+      <td style="font-size:12px;color:var(--mink)">${v.Vendedor||"—"}</td>
+      <td style="font-weight:700">${Q(v.Total)}</td>
+      <td style="color:var(--green);font-weight:600">${cobrado>0?Q(cobrado):"—"}</td>
+      <td style="color:var(--orange);font-weight:600">${pendiente>0.01?Q(pendiente):"—"}</td>
+      <td>${badgeCobro(estado,cobrado,+v.Total||0)}</td>
+      <td>${estado!=="cobrado"?`<button onclick="abrirCobro('${v.ID}')"
+        style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+        <i class="bi bi-plus"></i>Cobro</button>`:""}
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function exportarCobros(){
+  if(!cobros.length){alert("No hay cobros registrados.");return}
+  const rows=[["ID Cobro","ID Venta","Fecha","Monto","Metodo","Vendedor","Notas","Cliente","Total Venta"]];
+  cobros.forEach(c=>{
+    const v=vtas.find(x=>x.ID===c.VentaID);
+    rows.push([c.ID||"",c.VentaID||"",c.Fecha||"",c.Monto||0,c.Metodo||"",
+      c.Vendedor||"",c.Notas||"",v?.ClienteNombre||"",v?.Total||""]);
+  });
+  const bom="\uFEFF";
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([bom+csv],{type:"text/csv;charset=utf-8;"}));
+  a.download=`Sorelle_Cobros_${localDate()}.csv`;
+  a.click();
+  toast("✅ Cobros exportados","#3db88a");
+}
+
 function exportarVentas(){
   const fi=g("hfi").value,ff=g("hff").value;
   const filtradas=vtas.filter(v=>{
